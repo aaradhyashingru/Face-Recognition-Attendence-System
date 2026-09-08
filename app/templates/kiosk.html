@@ -1,0 +1,412 @@
+{% extends "base.html" %}
+
+{% block title %}Touchless Attendance Kiosk — FRAS Enterprise{% endblock %}
+
+{% block content %}
+<div style="max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px;">
+
+  <!-- Header Alert & Controls -->
+  <div style="display: flex; justify-content: space-between; align-items: center;">
+    <div>
+      <h1 style="font-size: 1.8rem; font-weight: 800; color: var(--text-main); display: flex; align-items: center; gap: 12px;">
+        <span>Touchless Attendance Kiosk</span>
+        <span class="neo-badge neo-badge-success" style="font-size: 0.75rem;">LIVE SYSTEM</span>
+      </h1>
+      <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 4px;">
+        Stand in front of the camera. System detects frontal faces, verifies liveness, and registers attendance automatically.
+      </p>
+    </div>
+
+    <!-- Kiosk Controls -->
+    <div style="display: flex; gap: 12px;">
+      <button id="btn-audio-toggle" onclick="toggleAudio()" class="neo-btn" title="Toggle Voice Feedback">
+        <i data-feather="volume-2" id="audio-icon"></i> Voice Enabled
+      </button>
+      <button onclick="toggleFullscreen()" class="neo-btn" title="Fullscreen Mode">
+        <i data-feather="maximize"></i> Fullscreen
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Kiosk Layout Grid -->
+  <div style="display: grid; grid-template-columns: 1.8fr 1.2fr; gap: 28px;">
+
+    <!-- Left: Neomorphic Camera Viewfinder -->
+    <div class="neo-card" style="padding: 20px; display: flex; flex-direction: column;">
+      <div class="neo-viewfinder" id="viewfinder-container" style="height: 520px;">
+        <video id="kiosk-video" autoplay playsinline muted></video>
+        <canvas id="kiosk-canvas"></canvas>
+
+        <!-- Viewfinder Reticles -->
+        <div class="reticle-corner reticle-top-left" id="reticle-tl"></div>
+        <div class="reticle-corner reticle-top-right" id="reticle-tr"></div>
+        <div class="reticle-corner reticle-bottom-left" id="reticle-bl"></div>
+        <div class="reticle-corner reticle-bottom-right" id="reticle-br"></div>
+
+        <!-- Scanning Overlay Banner -->
+        <div id="scanning-banner" class="neo-badge neo-badge-info" style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(6, 182, 212, 0.9); color: white; padding: 8px 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+          <i data-feather="loader" style="width: 14px; height: 14px; animation: spin 2s linear infinite;"></i>
+          <span id="scan-status-text">Scanning for faces...</span>
+        </div>
+      </div>
+
+      <!-- Quick Guidance -->
+      <div style="display: flex; justify-content: space-around; margin-top: 18px; color: var(--text-muted); font-size: 0.85rem; font-weight: 500;">
+        <div style="display: flex; align-items: center; gap: 6px;"><i data-feather="sun" style="width: 16px; height: 16px; color: var(--warning);"></i> Good Illumination</div>
+        <div style="display: flex; align-items: center; gap: 6px;"><i data-feather="smile" style="width: 16px; height: 16px; color: var(--primary);"></i> Frontal Pose</div>
+        <div style="display: flex; align-items: center; gap: 6px;"><i data-feather="shield" style="width: 16px; height: 16px; color: var(--success);"></i> Anti-Spoof Protected</div>
+      </div>
+    </div>
+
+    <!-- Right: Neomorphic Punch Feedback Card -->
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+      
+      <!-- Live Identification Card -->
+      <div class="neo-card" id="punch-card" style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 36px 28px; position: relative;">
+        
+        <!-- Status Indicator Pill -->
+        <div id="punch-status-badge" class="neo-badge neo-badge-info" style="margin-bottom: 20px;">
+          STAND IN VIEW
+        </div>
+
+        <!-- Avatar Extrusion -->
+        <div id="user-avatar-box" class="neo-card" style="width: 110px; height: 110px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 18px; color: var(--primary); transition: var(--transition-smooth);">
+          <i data-feather="user" style="width: 54px; height: 54px;" id="avatar-icon"></i>
+        </div>
+
+        <h2 id="card-user-name" style="font-size: 1.5rem; font-weight: 800; color: var(--text-main);">
+          Waiting for user...
+        </h2>
+
+        <p id="card-user-code" style="color: var(--text-muted); font-size: 1rem; font-weight: 600; margin-top: 4px;">
+          Roll / Employee ID: ----
+        </p>
+
+        <div id="card-user-dept" class="neo-card-inset" style="padding: 6px 16px; border-radius: var(--radius-full); margin-top: 14px; font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">
+          Department: General
+        </div>
+
+        <!-- Punch Details Matrix -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; width: 100%; margin-top: 24px;">
+          <div class="neo-card-inset" style="padding: 12px; border-radius: var(--radius-sm); text-align: center;">
+            <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">PUNCH TYPE</div>
+            <div id="card-punch-type" style="font-size: 1.2rem; font-weight: 800; color: var(--primary); margin-top: 4px;">--</div>
+          </div>
+          <div class="neo-card-inset" style="padding: 12px; border-radius: var(--radius-sm); text-align: center;">
+            <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">PUNCH TIME</div>
+            <div id="card-punch-time" style="font-size: 1.1rem; font-weight: 800; color: var(--text-main); margin-top: 4px;">--:--:--</div>
+          </div>
+        </div>
+
+        <!-- Notification Message -->
+        <div id="card-message" style="margin-top: 18px; font-size: 0.9rem; font-weight: 600; color: var(--text-muted);">
+          Position your face inside the viewfinder reticles.
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Today's Live Punch Feed -->
+  <div class="neo-card" style="padding: 20px 28px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+        <i data-feather="clock" style="color: var(--primary);"></i> Today's Live Attendance Feed
+      </h3>
+      <span id="live-count-badge" class="neo-badge neo-badge-info">0 PUNCHE(S) TODAY</span>
+    </div>
+
+    <div class="neo-table-wrapper">
+      <table class="neo-table">
+        <thead>
+          <tr>
+            <th>User Code</th>
+            <th>Full Name</th>
+            <th>Department</th>
+            <th>Punch Time</th>
+            <th>Type</th>
+            <th>Status</th>
+            <th>Confidence</th>
+          </tr>
+        </thead>
+        <tbody id="today-feed-body">
+          <tr>
+            <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 24px;">
+              No attendance records logged yet today.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<style>
+@keyframes spin { 100% { transform: rotate(360deg); } }
+</style>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  let videoEl = document.getElementById('kiosk-video');
+  let canvasEl = document.getElementById('kiosk-canvas');
+  let ctx = canvasEl.getContext('2d');
+  let isProcessing = false;
+  let voiceEnabled = true;
+
+  // Offscreen canvas for JPEG snapshot
+  const snapCanvas = document.createElement('canvas');
+  const snapCtx = snapCanvas.getContext('2d');
+
+  // Start Camera
+  async function initCamera() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          width: { ideal: 640 },
+          height: { ideal: 480 },
+          facingMode: 'user'
+        },
+        audio: false
+      });
+      videoEl.srcObject = stream;
+      await videoEl.play();
+
+      // Sync canvas dimensions
+      canvasEl.width = videoEl.videoWidth || 640;
+      canvasEl.height = videoEl.videoHeight || 480;
+      snapCanvas.width = 480;
+      snapCanvas.height = 360;
+
+      // Start Recognition Loop
+      setInterval(processFrame, 450);
+      loadTodayFeed();
+      setInterval(loadTodayFeed, 5000);
+    } catch (err) {
+      console.error('Camera access error:', err);
+      showToast('Camera access denied or unavailable: ' + err.message, 'danger');
+      document.getElementById('scan-status-text').textContent = 'Camera Unavailable';
+    }
+  }
+
+  // Audio Toggle
+  function toggleAudio() {
+    voiceEnabled = !voiceEnabled;
+    const btn = document.getElementById('btn-audio-toggle');
+    const icon = document.getElementById('audio-icon');
+    if (voiceEnabled) {
+      btn.innerHTML = '<i data-feather="volume-2" id="audio-icon"></i> Voice Enabled';
+      btn.classList.remove('neo-btn-danger');
+    } else {
+      btn.innerHTML = '<i data-feather="volume-x" id="audio-icon"></i> Voice Muted';
+      btn.classList.add('neo-btn-danger');
+    }
+    feather.replace();
+  }
+
+  // Web Audio Chime + Text-to-Speech
+  function playPunchChime() {
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
+      osc.frequency.exponentialRampToValueAtTime(880.00, audioCtx.currentTime + 0.15); // A5
+      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.35);
+    } catch (e) {}
+  }
+
+  function speakText(text) {
+    if (!voiceEnabled || !('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 1.05;
+    utterance.pitch = 1.0;
+    window.speechSynthesis.speak(utterance);
+  }
+
+  // Fullscreen
+  function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    }
+  }
+
+  // Frame Processing Loop
+  async function processFrame() {
+    if (isProcessing || videoEl.paused || videoEl.ended) return;
+    isProcessing = true;
+
+    try {
+      // Draw frame to offscreen canvas and encode
+      snapCtx.drawImage(videoEl, 0, 0, snapCanvas.width, snapCanvas.height);
+      const frameBase64 = snapCanvas.toDataURL('image/jpeg', 0.7);
+
+      const resp = await fetch('/api/v1/attendance/recognize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ frame: frameBase64 })
+      });
+
+      const data = await resp.json();
+      renderRecognitionResult(data);
+    } catch (err) {
+      console.error('Recognition error:', err);
+    } finally {
+      isProcessing = false;
+    }
+  }
+
+  // Render Recognition Feedback & Bounding Boxes
+  function renderRecognitionResult(data) {
+    ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+
+    const reticles = [
+      document.getElementById('reticle-tl'),
+      document.getElementById('reticle-tr'),
+      document.getElementById('reticle-bl'),
+      document.getElementById('reticle-br')
+    ];
+
+    if (data.status === 'NO_FACE') {
+      document.getElementById('scan-status-text').textContent = 'Searching for face...';
+      reticles.forEach(r => r.style.borderColor = 'var(--primary)');
+      return;
+    }
+
+    // Draw Bounding Box if present
+    if (data.bbox) {
+      const scaleX = canvasEl.width / snapCanvas.width;
+      const scaleY = canvasEl.height / snapCanvas.height;
+      const [bx, by, bw, bh] = data.bbox;
+
+      let strokeColor = '#3b82f6';
+      if (data.status === 'SUCCESS') strokeColor = '#10b981';
+      else if (data.status === 'COOLDOWN') strokeColor = '#f59e0b';
+      else if (data.status === 'UNKNOWN' || data.status === 'SPOOF_DETECTED') strokeColor = '#ef4444';
+
+      reticles.forEach(r => r.style.borderColor = strokeColor);
+
+      ctx.save();
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = strokeColor;
+      ctx.strokeRect(bx * scaleX, by * scaleY, bw * scaleX, bh * scaleY);
+
+      // Label background
+      ctx.fillStyle = strokeColor;
+      const label = data.full_name ? `${data.full_name} (${Math.round(data.confidence * 100)}%)` : (data.status === 'SPOOF_DETECTED' ? 'SPOOF ALERT' : 'UNKNOWN');
+      ctx.fillRect(bx * scaleX, (by * scaleY) - 30, (bw * scaleX), 30);
+
+      // Label text
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 16px Inter, sans-serif';
+      ctx.fillText(label, (bx * scaleX) + 8, (by * scaleY) - 8);
+      ctx.restore();
+    }
+
+    // Update Sidebar UI
+    const badge = document.getElementById('punch-status-badge');
+    const nameEl = document.getElementById('card-user-name');
+    const codeEl = document.getElementById('card-user-code');
+    const deptEl = document.getElementById('card-user-dept');
+    const typeEl = document.getElementById('card-punch-type');
+    const timeEl = document.getElementById('card-punch-time');
+    const msgEl = document.getElementById('card-message');
+
+    if (data.status === 'SUCCESS') {
+      badge.className = 'neo-badge neo-badge-success';
+      badge.textContent = `PUNCH ${data.punch_type} RECORDED`;
+      nameEl.textContent = data.full_name;
+      codeEl.textContent = `Roll / ID: ${data.user_code}`;
+      deptEl.textContent = `Department: ${data.department || 'General'}`;
+      typeEl.textContent = data.punch_type;
+      typeEl.style.color = 'var(--success)';
+      timeEl.textContent = data.punch_time;
+      msgEl.textContent = `Successfully verified (${Math.round(data.confidence * 100)}% match) — ${data.attendance_status}`;
+      msgEl.style.color = 'var(--success)';
+
+      playPunchChime();
+      speakText(`Welcome, ${data.full_name}. Attendance marked.`);
+      loadTodayFeed();
+    } 
+    else if (data.status === 'COOLDOWN') {
+      badge.className = 'neo-badge neo-badge-warning';
+      badge.textContent = 'COOLDOWN ACTIVE';
+      nameEl.textContent = data.full_name;
+      codeEl.textContent = `Roll / ID: ${data.user_code}`;
+      deptEl.textContent = `Department: ${data.department || 'General'}`;
+      typeEl.textContent = data.punch_type;
+      timeEl.textContent = data.punch_time;
+      msgEl.textContent = data.message;
+      msgEl.style.color = 'var(--warning)';
+    } 
+    else if (data.status === 'SPOOF_DETECTED') {
+      badge.className = 'neo-badge neo-badge-danger';
+      badge.textContent = 'SPOOF DETECTED';
+      nameEl.textContent = 'Verification Failed';
+      codeEl.textContent = 'Live human face required';
+      msgEl.textContent = 'Anti-spoofing alert: Screen or paper reflection detected.';
+      msgEl.style.color = 'var(--danger)';
+    } 
+    else if (data.status === 'UNKNOWN') {
+      badge.className = 'neo-badge neo-badge-danger';
+      badge.textContent = 'UNRECOGNIZED FACE';
+      nameEl.textContent = 'Unknown Person';
+      codeEl.textContent = 'Not Registered in Database';
+      msgEl.textContent = 'Please register in the Admin Users portal to record attendance.';
+      msgEl.style.color = 'var(--danger)';
+    }
+  }
+
+  // Load Feed
+  async function loadTodayFeed() {
+    try {
+      const res = await fetch('/api/v1/attendance/today');
+      const logs = await res.json();
+      const tbody = document.getElementById('today-feed-body');
+      const badge = document.getElementById('live-count-badge');
+      badge.textContent = `${logs.length} PUNCHE(S) TODAY`;
+
+      if (!logs.length) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 24px;">No attendance records logged yet today.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = logs.map(l => {
+        const statusBadge = l.status === 'ON_TIME' ? '<span class="neo-badge neo-badge-success">ON TIME</span>' : '<span class="neo-badge neo-badge-warning">LATE</span>';
+        const typeBadge = l.punch_type === 'IN' ? '<span class="neo-badge neo-badge-info">CHECK-IN</span>' : '<span class="neo-badge neo-badge-warning">CHECK-OUT</span>';
+        const timeStr = new Date(l.timestamp).toLocaleTimeString('en-US', { hour12: true });
+
+        return `
+          <tr>
+            <td><b>${l.user_code}</b></td>
+            <td><b>${l.full_name}</b></td>
+            <td>${l.department_name || 'General'}</td>
+            <td>${timeStr}</td>
+            <td>${typeBadge}</td>
+            <td>${statusBadge}</td>
+            <td>${Math.round(l.confidence_score * 100)}%</td>
+          </tr>
+        `;
+      }).join('');
+    } catch (e) {
+      console.error('Feed error:', e);
+    }
+  }
+
+  // Initialize
+  window.addEventListener('DOMContentLoaded', initCamera);
+</script>
+{% endblock %}

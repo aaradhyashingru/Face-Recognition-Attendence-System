@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard — FRAS Enterprise{% endblock %}
+
+{% block content %}
+<div style="max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px;">
+
+  <!-- Dashboard Header -->
+  <div style="display: flex; justify-content: space-between; align-items: center;">
+    <div>
+      <h1 style="font-size: 1.8rem; font-weight: 800; color: var(--text-main);">
+        Administrator Dashboard
+      </h1>
+      <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 4px;">
+        High-accuracy biometric audit, real-time analytics, and workforce attendance monitoring.
+      </p>
+    </div>
+
+    <!-- Quick Action Toolbar -->
+    <div style="display: flex; gap: 12px;">
+      <a href="/admin/users" class="neo-btn neo-btn-primary">
+        <i data-feather="user-plus"></i> Enroll New User
+      </a>
+      <a href="/api/v1/attendance/export/excel" class="neo-btn neo-btn-success">
+        <i data-feather="download"></i> Export Excel (.xlsx)
+      </a>
+      <a href="/kiosk" class="neo-btn">
+        <i data-feather="external-link"></i> Launch Kiosk
+      </a>
+    </div>
+  </div>
+
+  <!-- 4 Neomorphic KPI Metric Cards -->
+  <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;">
+
+    <!-- Total Users -->
+    <div class="neo-card" style="display: flex; align-items: center; gap: 20px; padding: 24px;">
+      <div class="neo-card" style="width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--primary);">
+        <i data-feather="users" style="width: 28px; height: 28px;"></i>
+      </div>
+      <div>
+        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">
+          Total Registered
+        </div>
+        <div style="font-size: 1.8rem; font-weight: 800; color: var(--text-main); margin-top: 2px;">
+          {{ total_users }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Present Today -->
+    <div class="neo-card" style="display: flex; align-items: center; gap: 20px; padding: 24px;">
+      <div class="neo-card" style="width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--success);">
+        <i data-feather="check-circle" style="width: 28px; height: 28px;"></i>
+      </div>
+      <div>
+        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">
+          Present Today
+        </div>
+        <div style="font-size: 1.8rem; font-weight: 800; color: var(--text-main); margin-top: 2px;">
+          {{ present_today }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Late Arrivals -->
+    <div class="neo-card" style="display: flex; align-items: center; gap: 20px; padding: 24px;">
+      <div class="neo-card" style="width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--warning);">
+        <i data-feather="alert-circle" style="width: 28px; height: 28px;"></i>
+      </div>
+      <div>
+        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">
+          Late Marks
+        </div>
+        <div style="font-size: 1.8rem; font-weight: 800; color: var(--text-main); margin-top: 2px;">
+          {{ late_count }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Attendance Rate % -->
+    <div class="neo-card" style="display: flex; align-items: center; gap: 20px; padding: 24px;">
+      <div class="neo-card" style="width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--info);">
+        <i data-feather="trending-up" style="width: 28px; height: 28px;"></i>
+      </div>
+      <div>
+        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">
+          Attendance Rate
+        </div>
+        <div style="font-size: 1.8rem; font-weight: 800; color: var(--text-main); margin-top: 2px;">
+          {{ attendance_rate }}%
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Recent Punches Matrix -->
+  <div class="neo-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h3 style="font-size: 1.2rem; font-weight: 800; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+        <i data-feather="activity" style="color: var(--primary);"></i> Real-Time Punch Activity
+      </h3>
+      <a href="/admin/reports" class="neo-btn" style="font-size: 0.85rem; padding: 8px 16px;">
+        View Full Logs <i data-feather="chevron-right" style="width: 14px; height: 14px;"></i>
+      </a>
+    </div>
+
+    <div class="neo-table-wrapper">
+      <table class="neo-table">
+        <thead>
+          <tr>
+            <th>User Code</th>
+            <th>Name</th>
+            <th>Department</th>
+            <th>Date & Time</th>
+            <th>Type</th>
+            <th>Status</th>
+            <th>Confidence</th>
+            <th>Device</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if recent_punches %}
+            {% for log in recent_punches %}
+            <tr>
+              <td><b>{{ log.user.user_code }}</b></td>
+              <td><b>{{ log.user.full_name }}</b></td>
+              <td>{{ log.user.department.name if log.user.department else "General" }}</td>
+              <td>{{ log.timestamp.strftime("%d %b %Y, %I:%M:%S %p") }}</td>
+              <td>
+                {% if log.punch_type == "IN" %}
+                  <span class="neo-badge neo-badge-info">CHECK-IN</span>
+                {% else %}
+                  <span class="neo-badge neo-badge-warning">CHECK-OUT</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if log.status == "ON_TIME" %}
+                  <span class="neo-badge neo-badge-success">ON TIME</span>
+                {% else %}
+                  <span class="neo-badge neo-badge-warning">LATE</span>
+                {% endif %}
+              </td>
+              <td>{{ (log.confidence_score * 100) | round | int }}%</td>
+              <td><span style="font-family: monospace; font-size: 0.85rem; color: var(--text-muted);">{{ log.device_id }}</span></td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 32px;">
+                No attendance logs recorded today.
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

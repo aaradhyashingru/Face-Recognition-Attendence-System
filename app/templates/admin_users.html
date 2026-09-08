@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+
+{% block title %}User Directory & Biometrics — FRAS Enterprise{% endblock %}
+
+{% block content %}
+<div style="max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px;">
+
+  <!-- Header & Add User Button -->
+  <div style="display: flex; justify-content: space-between; align-items: center;">
+    <div>
+      <h1 style="font-size: 1.8rem; font-weight: 800; color: var(--text-main);">
+        Registered Users & Biometrics
+      </h1>
+      <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 4px;">
+        Manage student/employee profiles and capture biometric face embeddings via browser webcam.
+      </p>
+    </div>
+
+    <button onclick="openEnrollModal()" class="neo-btn neo-btn-primary">
+      <i data-feather="user-plus"></i> Enroll New User
+    </button>
+  </div>
+
+  <!-- Users Table -->
+  <div class="neo-card">
+    <div class="neo-table-wrapper">
+      <table class="neo-table">
+        <thead>
+          <tr>
+            <th>User Code / Roll</th>
+            <th>Full Name</th>
+            <th>Email</th>
+            <th>Department</th>
+            <th>Biometrics</th>
+            <th>Created At</th>
+            <th style="text-align: right;">Action</th>
+          </tr>
+        </thead>
+        <tbody id="users-table-body">
+          {% if users %}
+            {% for u in users %}
+            <tr id="user-row-{{ u.id }}">
+              <td><b>{{ u.user_code }}</b></td>
+              <td><b>{{ u.full_name }}</b></td>
+              <td>{{ u.email or "—" }}</td>
+              <td>{{ u.department.name if u.department else "General" }}</td>
+              <td>
+                {% if u.embeddings and u.embeddings|length > 0 %}
+                  <span class="neo-badge neo-badge-success">
+                    <i data-feather="check" style="width: 12px; height: 12px;"></i> ENROLLED
+                  </span>
+                {% else %}
+                  <span class="neo-badge neo-badge-warning">NO EMBEDDING</span>
+                {% endif %}
+              </td>
+              <td>{{ u.created_at.strftime("%d %b %Y") }}</td>
+              <td style="text-align: right;">
+                <button onclick="deleteUser({{ u.id }}, '{{ u.full_name }}')" class="neo-btn neo-btn-danger" style="padding: 6px 14px; font-size: 0.8rem;">
+                  <i data-feather="trash-2" style="width: 14px; height: 14px;"></i> Delete
+                </button>
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 32px;">
+                No registered users found. Click "Enroll New User" to add the first profile.
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- Neomorphic Enrollment Modal -->
+<div id="enroll-modal" class="neo-modal-backdrop" style="display: none;">
+  <div class="neo-modal">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h3 style="font-size: 1.3rem; font-weight: 800; color: var(--text-main); display: flex; align-items: center; gap: 10px;">
+        <i data-feather="camera" style="color: var(--primary);"></i> Biometric Face Enrollment
+      </h3>
+      <button onclick="closeEnrollModal()" class="neo-btn" style="padding: 8px 12px; border-radius: 50%;">
+        <i data-feather="x"></i>
+      </button>
+    </div>
+
+    <!-- Step 1: User Form -->
+    <form id="enroll-form" onsubmit="startBiometricCapture(event)" style="display: flex; flex-direction: column; gap: 16px;">
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <div>
+          <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px;">
+            USER CODE / ROLL ID *
+          </label>
+          <input type="text" id="enroll-code" class="neo-input" placeholder="e.g. CS202401" required>
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px;">
+            FULL NAME *
+          </label>
+          <input type="text" id="enroll-name" class="neo-input" placeholder="e.g. John Doe" required>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <div>
+          <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px;">
+            EMAIL ADDRESS
+          </label>
+          <input type="email" id="enroll-email" class="neo-input" placeholder="user@domain.com">
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px;">
+            DEPARTMENT / CLASS
+          </label>
+          <select id="enroll-dept" class="neo-select">
+            {% for d in departments %}
+            <option value="{{ d.id }}">{{ d.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <!-- Step 2: Camera Viewfinder in Modal -->
+      <div style="margin-top: 10px;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px;">
+          LIVE BIOMETRIC CAPTURE (LOOK DIRECTLY AT CAMERA)
+        </label>
+        <div class="neo-viewfinder" style="height: 260px; border-radius: var(--radius-md);">
+          <video id="modal-video" autoplay playsinline muted></video>
+          <canvas id="modal-canvas" style="display: none;"></canvas>
+        </div>
+      </div>
+
+      <!-- Progress Meter -->
+      <div id="enroll-progress-box" style="display: none; margin-top: 10px;">
+        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 700; margin-bottom: 6px;">
+          <span id="enroll-progress-label">Capturing Face Embeddings...</span>
+          <span id="enroll-progress-count">0 / 5 Frames</span>
+        </div>
+        <div class="neo-card-inset" style="padding: 4px; border-radius: var(--radius-full);">
+          <div id="enroll-progress-bar" style="height: 8px; width: 0%; background: linear-gradient(90deg, #3b82f6, #10b981); border-radius: var(--radius-full); transition: width 0.3s ease;"></div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 16px;">
+        <button type="button" onclick="closeEnrollModal()" class="neo-btn">
+          Cancel
+        </button>
+        <button type="submit" id="enroll-submit-btn" class="neo-btn neo-btn-primary">
+          <i data-feather="camera"></i> Capture & Enroll
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  let modalStream = null;
+  const modalVideo = document.getElementById('modal-video');
+  const modalCanvas = document.getElementById('modal-canvas');
+  const modalCtx = modalCanvas.getContext('2d');
+
+  async function openEnrollModal() {
+    document.getElementById('enroll-modal').style.display = 'flex';
+    document.getElementById('enroll-progress-box').style.display = 'none';
+    document.getElementById('enroll-submit-btn').disabled = false;
+    document.getElementById('enroll-submit-btn').innerHTML = '<i data-feather="camera"></i> Capture & Enroll';
+    feather.replace();
+
+    try {
+      modalStream = await navigator.mediaDevices.getUserMedia({ video: { width: 480, height: 360 } });
+      modalVideo.srcObject = modalStream;
+      await modalVideo.play();
+    } catch (err) {
+      showToast('Camera error: ' + err.message, 'danger');
+    }
+  }
+
+  function closeEnrollModal() {
+    document.getElementById('enroll-modal').style.display = 'none';
+    if (modalStream) {
+      modalStream.getTracks().forEach(t => t.stop());
+      modalStream = null;
+    }
+  }
+
+  // Multi-frame Capture & Submission
+  async function startBiometricCapture(e) {
+    e.preventDefault();
+    const btn = document.getElementById('enroll-submit-btn');
+    const progressBox = document.getElementById('enroll-progress-box');
+    const progressBar = document.getElementById('enroll-progress-bar');
+    const progressCount = document.getElementById('enroll-progress-count');
+
+    const code = document.getElementById('enroll-code').value.trim();
+    const name = document.getElementById('enroll-name').value.trim();
+    const email = document.getElementById('enroll-email').value.trim() || null;
+    const deptId = parseInt(document.getElementById('enroll-dept').value) || null;
+
+    btn.disabled = true;
+    progressBox.style.display = 'block';
+
+    modalCanvas.width = 480;
+    modalCanvas.height = 360;
+
+    const frames = [];
+    const TOTAL_FRAMES = 5;
+
+    // Capture 5 frames at 300ms intervals
+    for (let i = 1; i <= TOTAL_FRAMES; i++) {
+      modalCtx.drawImage(modalVideo, 0, 0, modalCanvas.width, modalCanvas.height);
+      const b64 = modalCanvas.toDataURL('image/jpeg', 0.85);
+      frames.push(b64);
+
+      progressBar.style.width = `${(i / TOTAL_FRAMES) * 100}%`;
+      progressCount.textContent = `${i} / ${TOTAL_FRAMES} Frames`;
+      await new Promise(r => setTimeout(r, 350));
+    }
+
+    btn.innerHTML = '<i data-feather="loader" style="animation: spin 1s linear infinite;"></i> Processing Vectors...';
+    feather.replace();
+
+    try {
+      const res = await fetch('/api/v1/users/enroll', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_code: code,
+          full_name: name,
+          email: email,
+          department_id: deptId,
+          frames: frames
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.detail || 'Enrollment failed');
+      }
+
+      showToast(data.message, 'success');
+      closeEnrollModal();
+      setTimeout(() => window.location.reload(), 800);
+    } catch (err) {
+      showToast(err.message, 'danger');
+      btn.disabled = false;
+      btn.innerHTML = '<i data-feather="camera"></i> Retry Capture';
+      feather.replace();
+    }
+  }
+
+  // Delete User
+  async function deleteUser(userId, userName) {
+    if (!confirm(`Are you sure you want to delete "${userName}" and all their biometric embeddings? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/v1/users/${userId}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.detail || 'Delete failed');
+      }
+
+      showToast(data.message, 'success');
+      const row = document.getElementById(`user-row-${userId}`);
+      if (row) row.remove();
+    } catch (err) {
+      showToast(err.message, 'danger');
+    }
+  }
+</script>
+<style>
+@keyframes spin { 100% { transform: rotate(360deg); } }
+</style>
+{% endblock %}

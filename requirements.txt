@@ -1,0 +1,23 @@
+# Core Web Framework
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+jinja2>=3.1.4
+python-multipart>=0.0.9
+aiofiles>=24.1.0
+
+# Database & ORM
+sqlalchemy>=2.0.30
+
+# Computer Vision & Machine Learning
+opencv-python>=4.10.0
+numpy>=1.26.0
+scikit-learn>=1.5.0
+
+# Reporting & Data Processing
+pandas>=2.2.0
+openpyxl>=3.1.5
+reportlab>=4.2.0
+
+# Security & Authentication
+pyjwt>=2.9.0
+pydantic>=2.8.0

@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}Attendance Reports & Audit Logs — FRAS Enterprise{% endblock %}
+
+{% block content %}
+<div style="max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px;">
+
+  <!-- Header -->
+  <div style="display: flex; justify-content: space-between; align-items: center;">
+    <div>
+      <h1 style="font-size: 1.8rem; font-weight: 800; color: var(--text-main);">
+        Attendance Reports & Audit Logs
+      </h1>
+      <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 4px;">
+        Filter, inspect, and export verified biometric punch records into formatted spreadsheets and PDF audits.
+      </p>
+    </div>
+
+    <!-- Export Actions -->
+    <div style="display: flex; gap: 12px;">
+      <button onclick="triggerExport('excel')" class="neo-btn neo-btn-success">
+        <i data-feather="file-spreadsheet"></i> Export Excel (.xlsx)
+      </button>
+      <button onclick="triggerExport('pdf')" class="neo-btn neo-btn-primary">
+        <i data-feather="file-text"></i> Export PDF Report
+      </button>
+    </div>
+  </div>
+
+  <!-- Neomorphic Filter Bar -->
+  <div class="neo-card" style="padding: 24px;">
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr) auto; gap: 16px; align-items: flex-end;">
+      
+      <div>
+        <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px;">
+          START DATE
+        </label>
+        <input type="date" id="filter-start" class="neo-input" value="{{ today_str }}">
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px;">
+          END DATE
+        </label>
+        <input type="date" id="filter-end" class="neo-input" value="{{ today_str }}">
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px;">
+          DEPARTMENT
+        </label>
+        <select id="filter-dept" class="neo-select">
+          <option value="">All Departments</option>
+          {% for d in departments %}
+          <option value="{{ d.id }}">{{ d.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px;">
+          SEARCH USER
+        </label>
+        <input type="text" id="filter-query" class="neo-input" placeholder="Name or Roll ID...">
+      </div>
+
+      <div>
+        <button onclick="fetchFilteredLogs()" class="neo-btn neo-btn-primary" style="padding: 12px 20px;">
+          <i data-feather="filter"></i> Filter
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Filtered Results Table -->
+  <div class="neo-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+      <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--text-main);">
+        Audit Records
+      </h3>
+      <span id="record-count-badge" class="neo-badge neo-badge-info">0 RECORD(S)</span>
+    </div>
+
+    <div class="neo-table-wrapper">
+      <table class="neo-table">
+        <thead>
+          <tr>
+            <th>User Code</th>
+            <th>Full Name</th>
+            <th>Department</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Type</th>
+            <th>Status</th>
+            <th>Confidence</th>
+          </tr>
+        </thead>
+        <tbody id="reports-table-body">
+          <tr>
+            <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 32px;">
+              Loading attendance audit logs...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  async function fetchFilteredLogs() {
+    const start = document.getElementById('filter-start').value;
+    const end = document.getElementById('filter-end').value;
+    const dept = document.getElementById('filter-dept').value;
+    const q = document.getElementById('filter-query').value.trim();
+
+    const params = new URLSearchParams();
+    if (start) params.append('start_date', start);
+    if (end) params.append('end_date', end);
+    if (dept) params.append('department_id', dept);
+    if (q) params.append('query', q);
+
+    const tbody = document.getElementById('reports-table-body');
+    const badge = document.getElementById('record-count-badge');
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 24px;">Fetching records...</td></tr>`;
+
+    try {
+      const res = await fetch(`/api/v1/attendance/logs?${params.toString()}`);
+      const logs = await res.json();
+      badge.textContent = `${logs.length} RECORD(S)`;
+
+      if (!logs.length) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 32px;">No attendance records found matching filters.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = logs.map(l => {
+        const typeBadge = l.punch_type === 'IN' ? '<span class="neo-badge neo-badge-info">CHECK-IN</span>' : '<span class="neo-badge neo-badge-warning">CHECK-OUT</span>';
+        const statusBadge = l.status === 'ON_TIME' ? '<span class="neo-badge neo-badge-success">ON TIME</span>' : '<span class="neo-badge neo-badge-warning">LATE</span>';
+
+        return `
+          <tr>
+            <td><b>${l.user_code}</b></td>
+            <td><b>${l.full_name}</b></td>
+            <td>${l.department}</td>
+            <td>${l.date}</td>
+            <td>${l.time}</td>
+            <td>${typeBadge}</td>
+            <td>${statusBadge}</td>
+            <td>${Math.round(l.confidence * 100)}%</td>
+          </tr>
+        `;
+      }).join('');
+    } catch (err) {
+      showToast('Error loading reports: ' + err.message, 'danger');
+    }
+  }
+
+  function triggerExport(type) {
+    const start = document.getElementById('filter-start').value;
+    const end = document.getElementById('filter-end').value;
+    const dept = document.getElementById('filter-dept').value;
+
+    const params = new URLSearchParams();
+    if (start) params.append('start_date', start);
+    if (end) params.append('end_date', end);
+    if (dept) params.append('department_id', dept);
+
+    const endpoint = type === 'excel' ? '/api/v1/attendance/export/excel' : '/api/v1/attendance/export/pdf';
+    window.location.href = `${endpoint}?${params.toString()}`;
+  }
+
+  window.addEventListener('DOMContentLoaded', fetchFilteredLogs);
+</script>
+{% endblock %}
