@@ -86,6 +86,14 @@ app.include_router(attendance_router.router)
 app.include_router(web_router.router)
 
 
+from fastapi.responses import Response
+
+@app.get("/favicon.ico", include_in_schema=False)
+def favicon():
+    return Response(status_code=204)
+
+
 @app.get("/health", tags=["Health"])
 def health_check():
     return {"status": "healthy", "service": "FRAS Enterprise", "version": "2.0.0"}
+

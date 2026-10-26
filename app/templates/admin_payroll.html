@@ -200,7 +200,7 @@
               </span>
             </td>
             <td style="text-align: right;">
-              <button onclick="viewPayslip({{ r | tojson | forceescape }})" class="neo-btn neo-btn-outline" style="padding: 4px 10px; font-size: 0.75rem;">
+              <button onclick="viewPayslipById({{ r.user_id }})" class="neo-btn neo-btn-outline" style="padding: 4px 10px; font-size: 0.75rem;">
                 <i data-feather="file-text" style="width: 12px; height: 12px;"></i> View
               </button>
             </td>
@@ -307,7 +307,7 @@
           <td><span style="font-size: 1rem; font-weight: 800; color: #34d399;">$${r.net_pay.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span></td>
           <td>${statusBadge}</td>
           <td style="text-align: right;">
-            <button onclick="viewPayslip(${jsonStr})" class="neo-btn neo-btn-outline" style="padding: 4px 10px; font-size: 0.75rem;">
+            <button onclick="viewPayslipById(${r.user_id})" class="neo-btn neo-btn-outline" style="padding: 4px 10px; font-size: 0.75rem;">
               <i data-feather="file-text" style="width: 12px; height: 12px;"></i> View
             </button>
           </td>
@@ -315,6 +315,14 @@
       `;
     }).join('');
     feather.replace();
+  }
+
+  function viewPayslipById(userId) {
+    if (!currentPayrollData || !currentPayrollData.records) return;
+    const r = currentPayrollData.records.find(item => item.user_id === userId);
+    if (r) {
+      viewPayslip(r);
+    }
   }
 
   function filterPayrollRows() {
