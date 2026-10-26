@@ -1,13 +1,14 @@
-from datetime import datetime, date, time
+from datetime import datetime, date, time, timedelta
 from typing import List, Optional
 import numpy as np
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.auth import get_current_admin
+from app.config import KIOSK_API_KEY, logger
 from app.database import get_db
-from app.models import AttendanceLog, FaceEmbedding, User, Department
+from app.models import AttendanceLog, FaceEmbedding, User, Department, AuditLog
 from app.schemas import (
     FaceRecognizeRequest,
     FaceRecognizeResponse,
@@ -17,25 +18,56 @@ from app.schemas import (
 from app.services.attendance_engine import AttendanceEngine
 from app.services.export_service import ExportService
 from app.services.payroll_service import PayrollService
-from app.services.vision_engine import get_vision_engine
+from app.services.vision_engine import get_vision_engine, EmbeddingCache
 
 router = APIRouter(prefix="/api/v1/attendance", tags=["Attendance Tracking"])
+
+
+def parse_custom_datetime(dt_str: Optional[str]) -> datetime:
+    """Safely parse custom date and time string from ISO or human formats."""
+    if not dt_str:
+        return datetime.now()
+    dt_str = dt_str.strip()
+    for fmt in (
+        "%Y-%m-%dT%H:%M:%S",
+        "%Y-%m-%dT%H:%M",
+        "%Y-%m-%d %H:%M:%S",
+        "%Y-%m-%d %H:%M",
+        "%Y-%m-%d",
+    ):
+        try:
+            return datetime.strptime(dt_str, fmt)
+        except ValueError:
+            continue
+    return datetime.now()
 
 
 @router.post("/recognize", response_model=FaceRecognizeResponse)
 def recognize_and_punch(
     req: FaceRecognizeRequest,
+    request: Request,
     db: Session = Depends(get_db),
 ):
     """
     Real-time face recognition and attendance punching endpoint called by Kiosk.
-    1. Decodes client webcam frame
-    2. Detects frontal faces & landmarks with YuNet
-    3. Runs anti-spoofing / liveness check
-    4. Extracts 128-d deep embedding with SFace
-    5. Cosine similarity match against database embeddings
-    6. Applies debounce cooldown and determines IN/OUT status
+    1. Validates Kiosk API key (if configured)
+    2. Decodes client webcam frame
+    3. Detects frontal faces & landmarks with YuNet
+    4. Runs anti-spoofing / liveness check
+    5. Extracts 128-d deep embedding with SFace
+    6. Cosine similarity match against high-performance in-memory embedding cache
+    7. Applies debounce cooldown and determines IN/OUT status
     """
+    # 0. Optional Kiosk Security Verification
+    if KIOSK_API_KEY:
+        kiosk_header = request.headers.get("X-Kiosk-Key") or request.query_params.get("kiosk_key")
+        if kiosk_header != KIOSK_API_KEY:
+            logger.warning("Unauthorized kiosk attempt: invalid or missing X-Kiosk-Key")
+            return FaceRecognizeResponse(
+                status="ERROR",
+                message="Unauthorized Kiosk device. Invalid or missing Kiosk API Key.",
+            )
+
     vision = get_vision_engine()
 
     # 1. Decode Frame
@@ -68,25 +100,15 @@ def recognize_and_punch(
     if query_vec is None:
         return FaceRecognizeResponse(status="NO_FACE", message="Could not extract facial features")
 
-    # 5. Load Active Embeddings
-    all_embeddings = (
-        db.query(FaceEmbedding)
-        .join(User)
-        .filter(User.is_active == True)
-        .all()
-    )
+    # 5. Load Active Embeddings from In-Memory Cache (avoids disk reads on every 450ms frame)
+    registered_records = EmbeddingCache.get_embeddings(db)
 
-    if not all_embeddings:
+    if not registered_records:
         return FaceRecognizeResponse(
             status="UNKNOWN",
             bbox=bbox,
             message="No registered users found in system. Please enroll faces first.",
         )
-
-    registered_records = [
-        (emb.user_id, np.array(emb.get_vector(), dtype=np.float32))
-        for emb in all_embeddings
-    ]
 
     # 6. Perform Cosine Similarity Match
     matched_user_id, confidence = vision.match_embedding(query_vec, registered_records)
@@ -100,9 +122,9 @@ def recognize_and_punch(
         )
 
     # 7. Record Attendance & Apply Business Rules
-    user = db.query(User).filter(User.id == matched_user_id).first()
+    user = db.query(User).filter(User.id == matched_user_id, User.is_active == True).first()
     if not user:
-        return FaceRecognizeResponse(status="UNKNOWN", message="User record missing")
+        return FaceRecognizeResponse(status="UNKNOWN", message="User record missing or inactive")
 
     result_status, log = AttendanceEngine.record_punch(db, user, confidence)
 
@@ -297,24 +319,85 @@ def manual_punch(
     db: Session = Depends(get_db),
     admin: User = Depends(get_current_admin),
 ):
-    """Manually record a punch for a student/employee by Admin."""
+    """
+    Manually record custom punch IN, punch OUT, or both (full shift)
+    with custom date, time, punctuality status, and audit trail.
+    """
     user = db.query(User).filter(User.id == req.user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
+    p_type = req.punch_type.upper().strip()
+    in_dt = parse_custom_datetime(req.custom_timestamp)
+
+    if p_type == "BOTH":
+        # Record both IN and OUT for a complete shift
+        out_dt = parse_custom_datetime(req.out_timestamp) if req.out_timestamp else (in_dt + timedelta(hours=8))
+        if out_dt <= in_dt:
+            out_dt = in_dt + timedelta(hours=8)
+
+        log_in = AttendanceLog(
+            user_id=user.id,
+            timestamp=in_dt,
+            punch_type="IN",
+            status=req.status or "ON_TIME",
+            confidence_score=1.0,
+            device_id=f"ADMIN-MANUAL-{admin.user_code}",
+        )
+        log_out = AttendanceLog(
+            user_id=user.id,
+            timestamp=out_dt,
+            punch_type="OUT",
+            status="ON_TIME",
+            confidence_score=1.0,
+            device_id=f"ADMIN-MANUAL-{admin.user_code}",
+        )
+        db.add(log_in)
+        db.add(log_out)
+
+        details_msg = (
+            f"Manual full shift: IN at {in_dt.strftime('%Y-%m-%d %I:%M %p')} ({req.status}), "
+            f"OUT at {out_dt.strftime('%Y-%m-%d %I:%M %p')}. Note: {req.notes or 'None'}"
+        )
+        audit = AuditLog(
+            actor=admin.user_code,
+            action="MANUAL_SHIFT_PUNCH",
+            details=f"User {user.full_name} ({user.user_code}): {details_msg}",
+            timestamp=datetime.now(),
+        )
+        db.add(audit)
+        db.commit()
+
+        return {
+            "success": True,
+            "message": f"Full shift (IN & OUT) successfully recorded for {user.full_name}!",
+        }
+
+    # Single punch (IN or OUT)
     log = AttendanceLog(
         user_id=user.id,
-        timestamp=datetime.now(),
-        punch_type=req.punch_type,
-        status=req.status,
+        timestamp=in_dt,
+        punch_type=p_type,
+        status=req.status or "ON_TIME",
         confidence_score=1.0,
-        device_id=f"ADMIN-OVERRIDE-{admin.user_code}",
+        device_id=f"ADMIN-MANUAL-{admin.user_code}",
     )
     db.add(log)
+
+    audit = AuditLog(
+        actor=admin.user_code,
+        action=f"MANUAL_PUNCH_{p_type}",
+        details=f"Manual {p_type} punch ({req.status}) for {user.full_name} ({user.user_code}) at {in_dt.strftime('%Y-%m-%d %I:%M %p')}. Note: {req.notes or 'None'}",
+        timestamp=datetime.now(),
+    )
+    db.add(audit)
     db.commit()
     db.refresh(log)
 
-    return {"success": True, "message": f"Manual punch added for {user.full_name}"}
+    return {
+        "success": True,
+        "message": f"Manual {p_type} punch recorded for {user.full_name} at {in_dt.strftime('%d %b %Y, %I:%M %p')}",
+    }
 
 
 @router.get("/payroll/summary")
@@ -357,3 +440,22 @@ def export_payroll(
         headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
 
+
+@router.get("/audit")
+def get_audit_logs(
+    limit: int = Query(default=100, ge=1, le=500),
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin),
+):
+    """Retrieve system security & administrative audit trails."""
+    logs = db.query(AuditLog).order_by(AuditLog.timestamp.desc()).limit(limit).all()
+    return [
+        {
+            "id": l.id,
+            "actor": l.actor,
+            "action": l.action,
+            "details": l.details,
+            "timestamp": l.timestamp.strftime("%Y-%m-%d %I:%M:%S %p"),
+        }
+        for l in logs
+    ]

@@ -1,0 +1,34 @@
+# =========================================================================
+# Caddy Reverse Proxy Configuration for FRAS Enterprise
+# Automatic HTTPS via Let's Encrypt / ZeroSSL
+# Replace 'yourdomain.com' with your actual server domain or public IP
+# =========================================================================
+
+yourdomain.com {
+    # Reverse proxy requests to the Uvicorn application
+    reverse_proxy localhost:8000 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+
+    # Security Headers
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+
+    # Gzip and Zstandard compression
+    encode gzip zstd
+
+    # Logging
+    log {
+        output file /var/log/caddy/fras_access.log {
+            roll_size 10MB
+            roll_keep 5
+        }
+    }
+}

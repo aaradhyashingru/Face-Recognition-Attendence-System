@@ -17,7 +17,7 @@
         </span>
       </div>
       <p style="color: var(--text-muted); font-size: 0.88rem; margin-top: 3px;">
-        Manage student & employee accounts, configure hourly wage parameters, and capture deep metric face vectors.
+        Manage student & employee accounts, configure individual manual grace periods, hourly rates, and capture deep metric face vectors.
       </p>
     </div>
 
@@ -43,6 +43,7 @@
             <th>Full Name & Role</th>
             <th>Designation & Dept</th>
             <th>Wage Rate</th>
+            <th>Grace Time</th>
             <th>Biometric Status</th>
             <th>Enrolled Date</th>
             <th style="text-align: right;">Action</th>
@@ -70,6 +71,17 @@
               </td>
               <td><span style="font-family: monospace; font-weight: 700; color: #60a5fa;">${{ "{:,.2f}".format(u.hourly_rate or 25.0) }}/hr</span></td>
               <td>
+                {% if u.grace_period_mins is not none %}
+                  <span class="neo-badge neo-badge-info" style="font-size: 0.68rem;" title="Individual custom grace period">
+                    <i data-feather="clock" style="width: 10px; height: 10px;"></i> {{ u.grace_period_mins }}m (Custom)
+                  </span>
+                {% else %}
+                  <span style="font-size: 0.78rem; color: var(--text-muted);" title="Default Department grace period">
+                    {{ u.department.grace_period_mins if u.department else 15 }}m (Dept)
+                  </span>
+                {% endif %}
+              </td>
+              <td>
                 {% if u.embeddings and u.embeddings|length > 0 %}
                   <span class="neo-badge neo-badge-success" style="font-size: 0.68rem;">
                     <i data-feather="check" style="width: 10px; height: 10px;"></i> ENROLLED
@@ -79,8 +91,11 @@
                 {% endif %}
               </td>
               <td><span style="font-size: 0.82rem; color: var(--text-muted);">{{ u.created_at.strftime("%d %b %Y") }}</span></td>
-              <td style="text-align: right;">
-                <button onclick="deleteUser({{ u.id }}, '{{ u.full_name }}')" class="neo-btn neo-btn-danger" style="padding: 5px 12px; font-size: 0.75rem;">
+              <td style="text-align: right; white-space: nowrap;">
+                <button onclick="openEditUserModal({{ u.id }}, '{{ u.user_code }}', '{{ u.full_name }}', '{{ u.email or '' }}', {{ u.department_id or 'null' }}, '{{ u.designation or 'Staff' }}', {{ u.hourly_rate or 25.0 }}, {{ u.grace_period_mins if u.grace_period_mins is not none else 'null' }})" class="neo-btn" style="padding: 5px 10px; font-size: 0.75rem; margin-right: 4px;" title="Edit employee profile & manual grace time">
+                  <i data-feather="edit-2" style="width: 12px; height: 12px;"></i> Edit
+                </button>
+                <button onclick="deleteUser({{ u.id }}, '{{ u.full_name }}')" class="neo-btn neo-btn-danger" style="padding: 5px 10px; font-size: 0.75rem;" title="Delete profile">
                   <i data-feather="trash-2" style="width: 12px; height: 12px;"></i> Delete
                 </button>
               </td>
@@ -88,7 +103,7 @@
             {% endfor %}
           {% else %}
             <tr>
-              <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 28px;">
+              <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 28px;">
                 No registered users found. Click "Enroll New User" to capture biometric profiles.
               </td>
             </tr>
@@ -102,7 +117,7 @@
 
 <!-- Minimalist Biometric Enrollment Modal -->
 <div id="enroll-modal" class="neo-modal-backdrop" style="display: none;">
-  <div class="neo-modal">
+  <div class="neo-modal" style="max-width: 520px;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px;">
       <div>
         <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.3rem; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 8px;">
@@ -152,19 +167,25 @@
         </div>
       </div>
 
-      <!-- Designation & Wage Rate Fields for Payroll -->
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+      <!-- Designation, Wage Rate & Manual Grace Period -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
         <div>
           <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); margin-bottom: 5px;">
-            DESIGNATION / TITLE
+            DESIGNATION
           </label>
-          <input type="text" id="enroll-desig" class="neo-input" placeholder="e.g. Engineer, Student, Analyst" value="Staff">
+          <input type="text" id="enroll-desig" class="neo-input" placeholder="e.g. Engineer" value="Staff">
         </div>
         <div>
           <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); margin-bottom: 5px;">
-            HOURLY PAYROLL WAGE ($)
+            WAGE ($/HR)
           </label>
           <input type="number" step="0.5" id="enroll-rate" class="neo-input" placeholder="25.00" value="25.0">
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--primary); margin-bottom: 5px;">
+            GRACE (MINS)
+          </label>
+          <input type="number" min="0" max="180" id="enroll-grace" class="neo-input" placeholder="Dept default">
         </div>
       </div>
 
@@ -204,6 +225,95 @@
     </form>
   </div>
 </div>
+
+<!-- Edit Employee Profile & Manual Grace Period Modal -->
+<div id="edit-user-modal" class="neo-modal-backdrop" style="display: none;">
+  <div class="neo-modal" style="max-width: 500px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px;">
+      <div>
+        <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 8px;">
+          <i data-feather="user-check" style="width: 18px; height: 18px; color: var(--primary);"></i> Edit Employee & Manual Grace Time
+        </h3>
+        <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">Configure personalized attendance grace minutes & details</p>
+      </div>
+      <button onclick="closeEditUserModal()" class="neo-btn" style="padding: 6px; border-radius: 50%;">
+        <i data-feather="x" style="width: 16px; height: 16px;"></i>
+      </button>
+    </div>
+
+    <form id="edit-user-form" onsubmit="submitEditUser(event)" style="display: flex; flex-direction: column; gap: 14px;">
+      <input type="hidden" id="edit-user-id">
+      
+      <div>
+        <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); margin-bottom: 5px;">
+          EMPLOYEE ID / USER CODE
+        </label>
+        <input type="text" id="edit-user-code" class="neo-input" disabled style="opacity: 0.7; font-family: monospace;">
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div>
+          <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); margin-bottom: 5px;">
+            FULL NAME *
+          </label>
+          <input type="text" id="edit-user-name" class="neo-input" required>
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); margin-bottom: 5px;">
+            EMAIL ADDRESS
+          </label>
+          <input type="email" id="edit-user-email" class="neo-input">
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div>
+          <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); margin-bottom: 5px;">
+            DEPARTMENT
+          </label>
+          <select id="edit-user-dept" class="neo-select">
+            {% for d in departments %}
+            <option value="{{ d.id }}">{{ d.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); margin-bottom: 5px;">
+            DESIGNATION / TITLE
+          </label>
+          <input type="text" id="edit-user-desig" class="neo-input">
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div>
+          <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); margin-bottom: 5px;">
+            HOURLY RATE ($)
+          </label>
+          <input type="number" step="0.5" id="edit-user-rate" class="neo-input">
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #60a5fa; margin-bottom: 5px;">
+            MANUAL GRACE TIME (MINUTES)
+          </label>
+          <input type="number" min="0" max="180" id="edit-user-grace" class="neo-input" placeholder="e.g. 30 (Empty for Dept default)">
+        </div>
+      </div>
+
+      <div class="neo-card-inset" style="padding: 10px 14px; border-radius: var(--radius-sm); font-size: 0.75rem; color: var(--text-muted);">
+        <i data-feather="info" style="width: 12px; height: 12px; color: #60a5fa; vertical-align: middle;"></i>
+        <span>If set, this manual grace time directly overrides the department shift grace period for this employee. Leave empty to use department default.</span>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-subtle);">
+        <button type="button" onclick="closeEditUserModal()" class="neo-btn">Cancel</button>
+        <button type="submit" id="btn-edit-user-submit" class="neo-btn neo-btn-primary">
+          <i data-feather="check"></i> Save Changes
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
 {% endblock %}
 
 {% block extra_scripts %}
@@ -237,6 +347,69 @@
     }
   }
 
+  // Edit User & Manual Grace Time Modal
+  function openEditUserModal(id, code, name, email, deptId, desig, rate, graceMins) {
+    document.getElementById('edit-user-id').value = id;
+    document.getElementById('edit-user-code').value = code;
+    document.getElementById('edit-user-name').value = name;
+    document.getElementById('edit-user-email').value = email || '';
+    if (deptId) {
+      document.getElementById('edit-user-dept').value = deptId;
+    }
+    document.getElementById('edit-user-desig').value = desig || 'Staff';
+    document.getElementById('edit-user-rate').value = rate || 25.0;
+    document.getElementById('edit-user-grace').value = (graceMins !== null && graceMins !== undefined) ? graceMins : '';
+    document.getElementById('edit-user-modal').style.display = 'flex';
+    feather.replace();
+  }
+
+  function closeEditUserModal() {
+    document.getElementById('edit-user-modal').style.display = 'none';
+  }
+
+  async function submitEditUser(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btn-edit-user-submit');
+    const userId = document.getElementById('edit-user-id').value;
+    const name = document.getElementById('edit-user-name').value.trim();
+    const email = document.getElementById('edit-user-email').value.trim() || null;
+    const deptId = parseInt(document.getElementById('edit-user-dept').value) || null;
+    const desig = document.getElementById('edit-user-desig').value.trim() || 'Staff';
+    const rate = parseFloat(document.getElementById('edit-user-rate').value) || 25.0;
+    const graceRaw = document.getElementById('edit-user-grace').value.trim();
+    const graceMins = graceRaw !== '' ? parseInt(graceRaw) : null;
+
+    btn.disabled = true;
+    btn.innerHTML = '<i data-feather="loader" style="animation: spin 1s linear infinite;"></i> Saving...';
+    feather.replace();
+
+    try {
+      const res = await fetch(`/api/v1/users/${userId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          full_name: name,
+          email: email,
+          department_id: deptId,
+          designation: desig,
+          hourly_rate: rate,
+          grace_period_mins: graceMins
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Update failed');
+
+      showToast(`User ${name} updated successfully!`, 'success');
+      closeEditUserModal();
+      setTimeout(() => window.location.reload(), 700);
+    } catch (err) {
+      showToast(err.message, 'danger');
+      btn.disabled = false;
+      btn.innerHTML = '<i data-feather="check"></i> Save Changes';
+      feather.replace();
+    }
+  }
+
   // Multi-frame Capture & Submission
   async function startBiometricCapture(e) {
     e.preventDefault();
@@ -251,6 +424,8 @@
     const deptId = parseInt(document.getElementById('enroll-dept').value) || null;
     const designation = document.getElementById('enroll-desig').value.trim() || "Staff";
     const hourlyRate = parseFloat(document.getElementById('enroll-rate').value) || 25.0;
+    const graceRaw = document.getElementById('enroll-grace').value.trim();
+    const graceMins = graceRaw !== '' ? parseInt(graceRaw) : null;
 
     btn.disabled = true;
     progressBox.style.display = 'block';
@@ -286,6 +461,7 @@
           department_id: deptId,
           designation: designation,
           hourly_rate: hourlyRate,
+          grace_period_mins: graceMins,
           role: "USER",
           frames: frames
         })

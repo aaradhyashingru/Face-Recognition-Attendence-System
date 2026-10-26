@@ -1,18 +1,22 @@
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker, declarative_base
-from app.config import DATABASE_URL
+from app.config import DATABASE_URL, logger
 
-# Enable SQLite multi-threading and connection pooling settings
-connect_args = {"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
+is_sqlite = "sqlite" in DATABASE_URL
 
-engine = create_engine(
-    DATABASE_URL,
-    connect_args=connect_args,
-    echo=False,
-)
+engine_kwargs = {"echo": False}
+if is_sqlite:
+    engine_kwargs["connect_args"] = {"check_same_thread": False}
+else:
+    # Production connection pool settings for PostgreSQL/MySQL
+    engine_kwargs["pool_pre_ping"] = True
+    engine_kwargs["pool_size"] = 10
+    engine_kwargs["max_overflow"] = 20
+
+engine = create_engine(DATABASE_URL, **engine_kwargs)
 
 # Enforce SQLite WAL mode and foreign key constraints on connection
-if "sqlite" in DATABASE_URL:
+if is_sqlite:
     @event.listens_for(engine, "connect")
     def set_sqlite_pragma(dbapi_connection, connection_record):
         cursor = dbapi_connection.cursor()

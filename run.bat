@@ -14,13 +14,22 @@ if %errorlevel% neq 0 (
     exit /b
 )
 
+:: Initialize .env from .env.example if missing
+if not exist .env (
+    if exist .env.example (
+        echo [*] Initializing .env configuration from .env.example...
+        copy .env.example .env >nul
+    )
+)
+
 :: Install / Update Dependencies
 echo [*] Checking dependencies from requirements.txt...
 pip install -r requirements.txt --quiet
 
 :: Launch Application
 echo.
-echo [*] Launching FRAS Enterprise Server on http://127.0.0.1:8000 ...
+echo [*] Launching FRAS Enterprise Server...
+echo [*] Admin management CLI available via: python manage_admin.py
 echo [*] Press Ctrl+C to stop the server.
 echo.
 

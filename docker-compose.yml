@@ -1,0 +1,46 @@
+version: "3.9"
+
+services:
+  # FRAS Enterprise Application Service
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fras_app
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+    # Uncomment when using PostgreSQL service below:
+    # depends_on:
+    #   db:
+    #     condition: service_healthy
+
+  # Optional PostgreSQL Production Database (uncomment to switch from SQLite)
+  # db:
+  #   image: postgres:16-alpine
+  #   container_name: fras_postgres
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_USER: fras_user
+  #     POSTGRES_PASSWORD: fras_secure_password_replace_in_prod
+  #     POSTGRES_DB: fras_db
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U fras_user -d fras_db"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+
+# volumes:
+#   postgres_data:

@@ -4,6 +4,7 @@ import urllib.request
 from typing import Optional, Tuple, List, Dict
 import cv2
 import numpy as np
+from sqlalchemy.orm import Session
 
 from app.config import (
     YUNET_MODEL_PATH,
@@ -13,6 +14,7 @@ from app.config import (
     FACE_DETECTION_CONFIDENCE,
     FACE_SIMILARITY_THRESHOLD,
     LIVENESS_LAPLACIAN_THRESHOLD,
+    logger,
 )
 
 
@@ -21,8 +23,7 @@ class VisionEngine:
 
     def __init__(self):
         self._ensure_models_downloaded()
-        print("Loading OpenCV Deep Learning YuNet and SFace models...")
-        # FaceDetectorYN: input size will be dynamically adjusted per frame
+        logger.info("Loading OpenCV Deep Learning YuNet and SFace models...")
         self.detector = cv2.FaceDetectorYN.create(
             str(YUNET_MODEL_PATH),
             "",
@@ -32,7 +33,7 @@ class VisionEngine:
             top_k=5000,
         )
         self.recognizer = cv2.FaceRecognizerSF.create(str(SFACE_MODEL_PATH), "")
-        print("AI Vision Engine successfully initialized!")
+        logger.info("AI Vision Engine successfully initialized!")
 
     @classmethod
     def get_instance(cls) -> "VisionEngine":
@@ -43,14 +44,14 @@ class VisionEngine:
     def _ensure_models_downloaded(self):
         """Download YuNet & SFace ONNX models from OpenCV Zoo if not present."""
         if not YUNET_MODEL_PATH.exists():
-            print(f"Downloading YuNet Face Detector model to {YUNET_MODEL_PATH}...")
+            logger.info("Downloading YuNet Face Detector model to %s...", YUNET_MODEL_PATH)
             urllib.request.urlretrieve(YUNET_DOWNLOAD_URL, str(YUNET_MODEL_PATH))
-            print("YuNet model download complete.")
+            logger.info("YuNet model download complete.")
 
         if not SFACE_MODEL_PATH.exists():
-            print(f"Downloading SFace Face Recognizer model to {SFACE_MODEL_PATH}...")
+            logger.info("Downloading SFace Face Recognizer model to %s...", SFACE_MODEL_PATH)
             urllib.request.urlretrieve(SFACE_DOWNLOAD_URL, str(SFACE_MODEL_PATH))
-            print("SFace model download complete.")
+            logger.info("SFace model download complete.")
 
     def decode_base64_frame(self, base64_str: str) -> Optional[np.ndarray]:
         """Decode base64 data URL from browser canvas to OpenCV BGR numpy array."""
@@ -62,7 +63,7 @@ class VisionEngine:
             frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
             return frame
         except Exception as e:
-            print(f"Frame decode error: {e}")
+            logger.warning("Frame decode error: %s", e)
             return None
 
     def check_liveness(self, frame: np.ndarray, face_info: np.ndarray) -> Tuple[bool, float]:
@@ -102,7 +103,7 @@ class VisionEngine:
             is_live = lap_var >= LIVENESS_LAPLACIAN_THRESHOLD and sat_std >= 10.0
             return bool(is_live), round(float(combined_liveness), 3)
         except Exception as e:
-            print(f"Liveness check error: {e}")
+            logger.warning("Liveness check error: %s", e)
             return False, 0.0
 
     def detect_faces(self, frame: np.ndarray) -> Optional[np.ndarray]:
@@ -122,14 +123,13 @@ class VisionEngine:
         try:
             aligned_face = self.recognizer.alignCrop(frame, face_info)
             feature = self.recognizer.feature(aligned_face)
-            # Flatten and normalize
             vec = feature.flatten().astype(np.float32)
             norm = np.linalg.norm(vec)
             if norm > 1e-6:
                 vec = vec / norm
             return vec
         except Exception as e:
-            print(f"Feature extraction error: {e}")
+            logger.warning("Feature extraction error: %s", e)
             return None
 
     def match_embedding(
@@ -168,6 +168,39 @@ class VisionEngine:
         if best_similarity >= threshold:
             return best_user_id, round(normalized_conf, 3)
         return None, round(normalized_conf, 3)
+
+
+class EmbeddingCache:
+    """In-memory cache of registered face embeddings for high-frequency kiosk lookups."""
+    _cached_records: Optional[List[Tuple[int, np.ndarray]]] = None
+    _dirty: bool = True
+
+    @classmethod
+    def invalidate(cls):
+        """Invalidate cache when a user is enrolled, updated, or deleted."""
+        cls._dirty = True
+        cls._cached_records = None
+
+    @classmethod
+    def get_embeddings(cls, db: Session) -> List[Tuple[int, np.ndarray]]:
+        """Get parsed embeddings from RAM or load from DB if dirty."""
+        if cls._dirty or cls._cached_records is None:
+            from app.models import FaceEmbedding, User
+            all_embeddings = (
+                db.query(FaceEmbedding)
+                .join(User)
+                .filter(User.is_active == True)
+                .all()
+            )
+            records = []
+            for emb in all_embeddings:
+                try:
+                    records.append((emb.user_id, np.array(emb.get_vector(), dtype=np.float32)))
+                except Exception as e:
+                    logger.warning("Error parsing embedding for user %s: %s", emb.user_id, e)
+            cls._cached_records = records
+            cls._dirty = False
+        return cls._cached_records
 
 
 # Singleton accessor

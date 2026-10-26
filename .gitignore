@@ -8,6 +8,15 @@ venv/
 .venv/
 env/
 
+# Environment Variables & Secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+logs/
+
 # SQLite Database
 data/*.db
 data/*.db-wal

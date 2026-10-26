@@ -27,6 +27,7 @@ class UserBase(BaseModel):
     role: str = "USER"
     designation: Optional[str] = "Staff"
     hourly_rate: Optional[float] = 25.0
+    grace_period_mins: Optional[int] = None  # Custom grace time override (mins)
     is_active: bool = True
 
 
@@ -40,6 +41,7 @@ class UserUpdate(BaseModel):
     department_id: Optional[int] = None
     designation: Optional[str] = None
     hourly_rate: Optional[float] = None
+    grace_period_mins: Optional[int] = None
     role: Optional[str] = None
     is_active: Optional[bool] = None
 
@@ -49,6 +51,7 @@ class UserOut(UserBase):
     created_at: datetime
     has_biometric: bool = False
     department_name: Optional[str] = None
+    effective_grace_mins: Optional[int] = 15
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -59,6 +62,7 @@ class FaceEnrollRequest(BaseModel):
     department_id: Optional[int] = None
     designation: Optional[str] = "Staff"
     hourly_rate: Optional[float] = 25.0
+    grace_period_mins: Optional[int] = None  # Custom grace time override (mins)
     role: Optional[str] = "USER"
     frames: List[str]  # List of base64 data URLs captured by the browser
 
@@ -110,6 +114,13 @@ class TokenResponse(BaseModel):
 
 class ManualPunchRequest(BaseModel):
     user_id: int
-    punch_type: str = "IN"
-    status: str = "ON_TIME"
+    punch_type: str = "IN"  # "IN", "OUT", or "BOTH"
+    custom_timestamp: Optional[str] = None  # e.g., "2026-10-26T09:00" or "2026-10-26 09:00:00"
+    out_timestamp: Optional[str] = None  # Check-out timestamp when punch_type == "BOTH"
+    status: str = "ON_TIME"  # "ON_TIME", "LATE", "HALF_DAY", "EXCUSED"
     notes: Optional[str] = None
+
+
+class ChangePasswordRequest(BaseModel):
+    old_password: str
+    new_password: str

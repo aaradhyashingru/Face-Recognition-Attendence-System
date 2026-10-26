@@ -227,10 +227,10 @@
 
 <!-- Minimalist Manual Punch Override Modal -->
 <div id="manual-punch-modal" class="neo-modal-backdrop" style="display: none;">
-  <div class="neo-modal" style="max-width: 480px;">
+  <div class="neo-modal" style="max-width: 520px;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
       <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 8px;">
-        <i data-feather="edit-3" style="width: 18px; height: 18px; color: var(--primary);"></i> Manual Attendance Override
+        <i data-feather="edit-3" style="width: 18px; height: 18px; color: var(--primary);"></i> Custom & Manual Attendance Punch
       </h3>
       <button onclick="closeManualPunchModal()" class="neo-btn" style="padding: 6px; border-radius: 50%;">
         <i data-feather="x" style="width: 16px; height: 16px;"></i>
@@ -251,29 +251,58 @@
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
         <div>
           <label style="display: block; font-size: 0.78rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px;">
-            PUNCH TYPE
+            PUNCH TYPE / ACTION *
           </label>
-          <select id="manual-punch-type" class="neo-select">
-            <option value="IN">CHECK-IN</option>
-            <option value="OUT">CHECK-OUT</option>
+          <select id="manual-punch-type" class="neo-select" onchange="handlePunchTypeChange(this.value)">
+            <option value="IN">CHECK-IN (Punch In)</option>
+            <option value="OUT">CHECK-OUT (Punch Out)</option>
+            <option value="BOTH">FULL SHIFT (Both IN & OUT)</option>
           </select>
         </div>
         <div>
           <label style="display: block; font-size: 0.78rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px;">
-            STATUS
+            PUNCTUALITY STATUS
           </label>
           <select id="manual-status" class="neo-select">
             <option value="ON_TIME">ON TIME</option>
-            <option value="LATE">LATE</option>
+            <option value="LATE">LATE ARRIVAL</option>
+            <option value="HALF_DAY">HALF DAY</option>
+            <option value="EXCUSED">EXCUSED / OFFICIAL DUTY</option>
           </select>
         </div>
       </div>
 
+      <!-- Custom Date & Time Selection -->
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <label id="lbl-checkin-time" style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted);">
+            CUSTOM PUNCH DATE & TIME
+          </label>
+          <button type="button" onclick="setCurrentDateTime('manual-datetime')" class="neo-btn" style="padding: 2px 8px; font-size: 0.7rem;">
+            Set to Now
+          </button>
+        </div>
+        <input type="datetime-local" id="manual-datetime" class="neo-input" required>
+      </div>
+
+      <!-- Check-Out Time Field (shown only for BOTH / Full Shift) -->
+      <div id="checkout-time-group" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted);">
+            CHECK-OUT DATE & TIME
+          </label>
+          <button type="button" onclick="setShiftEndTime()" class="neo-btn" style="padding: 2px 8px; font-size: 0.7rem;">
+            +8 Hours
+          </button>
+        </div>
+        <input type="datetime-local" id="manual-out-datetime" class="neo-input">
+      </div>
+
       <div>
         <label style="display: block; font-size: 0.78rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px;">
-          ADMIN REASON / NOTES
+          ADMIN REASON / AUDIT NOTES
         </label>
-        <input type="text" id="manual-notes" class="neo-input" placeholder="e.g. Card forgotten / Offsite duty approval">
+        <input type="text" id="manual-notes" class="neo-input" placeholder="e.g. Approved leave / Camera missed punch / Offsite duty">
       </div>
 
       <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
@@ -281,7 +310,7 @@
           Cancel
         </button>
         <button type="submit" id="btn-manual-submit" class="neo-btn neo-btn-primary">
-          <i data-feather="check"></i> Submit Punch
+          <i data-feather="check"></i> Submit Manual Punch
         </button>
       </div>
     </form>
@@ -293,8 +322,46 @@
 <script>
   let cachedUsers = [];
 
+  function formatDateTimeLocal(dt) {
+    const pad = num => String(num).padStart(2, '0');
+    return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+  }
+
+  function setCurrentDateTime(inputId) {
+    const now = new Date();
+    document.getElementById(inputId).value = formatDateTimeLocal(now);
+  }
+
+  function setShiftEndTime() {
+    const inVal = document.getElementById('manual-datetime').value;
+    if (inVal) {
+      const inDate = new Date(inVal);
+      inDate.setHours(inDate.getHours() + 8);
+      document.getElementById('manual-out-datetime').value = formatDateTimeLocal(inDate);
+    }
+  }
+
+  function handlePunchTypeChange(val) {
+    const checkoutGroup = document.getElementById('checkout-time-group');
+    const lblCheckin = document.getElementById('lbl-checkin-time');
+    const outInput = document.getElementById('manual-out-datetime');
+
+    if (val === 'BOTH') {
+      checkoutGroup.style.display = 'block';
+      lblCheckin.textContent = 'CHECK-IN DATE & TIME';
+      outInput.required = true;
+      setShiftEndTime();
+    } else {
+      checkoutGroup.style.display = 'none';
+      lblCheckin.textContent = val === 'OUT' ? 'CHECK-OUT DATE & TIME' : 'CHECK-IN DATE & TIME';
+      outInput.required = false;
+    }
+  }
+
   async function openManualPunchModal() {
     document.getElementById('manual-punch-modal').style.display = 'flex';
+    setCurrentDateTime('manual-datetime');
+    handlePunchTypeChange(document.getElementById('manual-punch-type').value);
     feather.replace();
 
     if (!cachedUsers.length) {
@@ -303,7 +370,10 @@
         cachedUsers = await res.json();
         const sel = document.getElementById('manual-user-id');
         sel.innerHTML = '<option value="">Choose Employee...</option>' + 
-          cachedUsers.map(u => `<option value="${u.id}">${u.full_name} (${u.user_code}) - ${u.department_name || 'General'}</option>`).join('');
+          cachedUsers.map(u => {
+            const graceText = u.grace_period_mins !== null ? ` | Grace: ${u.grace_period_mins}m` : '';
+            return `<option value="${u.id}">${u.full_name} (${u.user_code}) - ${u.department_name || 'General'}${graceText}</option>`;
+          }).join('');
       } catch (err) {
         showToast('Error loading users: ' + err.message, 'danger');
       }
@@ -320,10 +390,12 @@
     const userId = parseInt(document.getElementById('manual-user-id').value);
     const punchType = document.getElementById('manual-punch-type').value;
     const status = document.getElementById('manual-status').value;
+    const customTime = document.getElementById('manual-datetime').value;
+    const outTime = document.getElementById('manual-out-datetime').value;
     const notes = document.getElementById('manual-notes').value;
 
     btn.disabled = true;
-    btn.innerHTML = '<i data-feather="loader" style="animation: spin 1s linear infinite;"></i> Saving...';
+    btn.innerHTML = '<i data-feather="loader" style="animation: spin 1s linear infinite;"></i> Recording...';
     feather.replace();
 
     try {
@@ -333,6 +405,8 @@
         body: JSON.stringify({
           user_id: userId,
           punch_type: punchType,
+          custom_timestamp: customTime,
+          out_timestamp: punchType === 'BOTH' ? outTime : null,
           status: status,
           notes: notes
         })
@@ -346,7 +420,7 @@
     } catch (err) {
       showToast(err.message, 'danger');
       btn.disabled = false;
-      btn.innerHTML = '<i data-feather="check"></i> Submit Punch';
+      btn.innerHTML = '<i data-feather="check"></i> Submit Manual Punch';
       feather.replace();
     }
   }

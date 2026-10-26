@@ -3,7 +3,12 @@ from typing import Optional, Tuple, Dict
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from app.config import PUNCH_COOLDOWN_SECONDS, DEFAULT_SHIFT_START, DEFAULT_GRACE_PERIOD_MINS
+from app.config import (
+    PUNCH_COOLDOWN_SECONDS,
+    DEFAULT_SHIFT_START,
+    DEFAULT_GRACE_PERIOD_MINS,
+    logger,
+)
 from app.models import AttendanceLog, User, Department
 
 
@@ -12,13 +17,27 @@ class AttendanceEngine:
     _cooldown_cache: Dict[int, datetime] = {}
 
     @classmethod
-    def check_cooldown(cls, user_id: int) -> Tuple[bool, int]:
+    def check_cooldown(cls, user_id: int, db: Optional[Session] = None) -> Tuple[bool, int]:
         """
         Check if user is within the debounce cooldown window.
+        Uses in-memory cache with automatic database fallback so restarts
+        do not reset the cooldown.
         Returns (is_in_cooldown, remaining_seconds).
         """
         now = datetime.now()
         last_punch = cls._cooldown_cache.get(user_id)
+
+        # Fallback to DB if not present in in-memory cache
+        if last_punch is None and db is not None:
+            latest_record = (
+                db.query(AttendanceLog.timestamp)
+                .filter(AttendanceLog.user_id == user_id)
+                .order_by(AttendanceLog.timestamp.desc())
+                .first()
+            )
+            if latest_record:
+                last_punch = latest_record[0]
+                cls._cooldown_cache[user_id] = last_punch
 
         if last_punch:
             elapsed = (now - last_punch).total_seconds()
@@ -44,10 +63,9 @@ class AttendanceEngine:
         today_start = datetime.combine(date.today(), time.min)
         today_end = datetime.combine(date.today(), time.max)
 
-        # 1. Check Debounce Cooldown
-        in_cooldown, remaining = cls.check_cooldown(user.id)
+        # 1. Check Debounce Cooldown (with DB fallback)
+        in_cooldown, remaining = cls.check_cooldown(user.id, db=db)
         if in_cooldown:
-            # Fetch latest punch for today to return info
             latest = (
                 db.query(AttendanceLog)
                 .filter(
@@ -82,9 +100,14 @@ class AttendanceEngine:
         shift_start_str = DEFAULT_SHIFT_START
         grace_mins = DEFAULT_GRACE_PERIOD_MINS
 
+        # Check department defaults
         if user.department:
             shift_start_str = user.department.shift_start or DEFAULT_SHIFT_START
             grace_mins = user.department.grace_period_mins or DEFAULT_GRACE_PERIOD_MINS
+
+        # Individual employee manual grace time override takes precedence
+        if getattr(user, "grace_period_mins", None) is not None:
+            grace_mins = user.grace_period_mins
 
         status = "ON_TIME"
         if punch_type == "IN":
@@ -96,7 +119,7 @@ class AttendanceEngine:
                 if now > shift_deadline:
                     status = "LATE"
             except Exception as e:
-                print(f"Shift calculation error: {e}")
+                logger.error("Shift calculation error: %s", e)
                 status = "ON_TIME"
 
         # 4. Save Record
@@ -112,7 +135,16 @@ class AttendanceEngine:
         db.commit()
         db.refresh(log)
 
-        # Update cooldown cache
+        # Update in-memory cooldown cache
         cls._cooldown_cache[user.id] = now
+
+        logger.info(
+            "Recorded punch: user_code=%s punch_type=%s status=%s grace_mins=%d device=%s",
+            user.user_code,
+            punch_type,
+            status,
+            grace_mins,
+            device_id,
+        )
 
         return "SUCCESS", log

@@ -7,6 +7,7 @@ aiofiles>=24.1.0
 
 # Database & ORM
 sqlalchemy>=2.0.30
+psycopg2-binary>=2.9.9
 
 # Computer Vision & Machine Learning
 opencv-python>=4.10.0
@@ -18,6 +19,7 @@ pandas>=2.2.0
 openpyxl>=3.1.5
 reportlab>=4.2.0
 
-# Security & Authentication
+# Security, Auth & Environment
 pyjwt>=2.9.0
 pydantic>=2.8.0
+python-dotenv>=1.0.1

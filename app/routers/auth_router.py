@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
-from app.auth import verify_password, create_access_token
+from app.auth import verify_password, hash_password, create_access_token, get_current_user
 from app.database import get_db
-from app.models import User
-from app.schemas import LoginRequest, TokenResponse
+from app.models import User, AuditLog
+from app.schemas import LoginRequest, TokenResponse, ChangePasswordRequest
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
 
@@ -52,3 +52,35 @@ def logout(response: Response):
     """Clear session cookie."""
     response.delete_cookie("access_token")
     return {"message": "Successfully logged out"}
+
+
+@router.post("/change-password")
+def change_password(
+    req: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Change password for currently authenticated user or admin."""
+    if not current_user.password_hash or not verify_password(req.old_password, current_user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password verification failed",
+        )
+
+    if len(req.new_password) < 6:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="New password must be at least 6 characters long",
+        )
+
+    current_user.password_hash = hash_password(req.new_password)
+
+    audit = AuditLog(
+        actor=current_user.user_code,
+        action="CHANGE_PASSWORD",
+        details=f"User {current_user.user_code} updated their account password.",
+    )
+    db.add(audit)
+    db.commit()
+
+    return {"success": True, "message": "Password changed successfully"}

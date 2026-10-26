@@ -15,22 +15,25 @@ from app.config import (
     DEFAULT_ADMIN_USER,
     DEFAULT_ADMIN_PASS,
     DEFAULT_ADMIN_EMAIL,
+    logger,
 )
 from app.database import get_db
 from app.models import User
 
 security = HTTPBearer(auto_error=False)
 
+ADMIN_ROLES = ("ADMIN", "SUPER_ADMIN", "HR_MANAGER")
+
 
 def hash_password(password: str) -> str:
-    """Hash password using PBKDF2-HMAC-SHA256 with a unique salt."""
+    """Hash password using PBKDF2-HMAC-SHA256 with a unique cryptographic salt."""
     salt = secrets.token_hex(16)
     key = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt.encode("utf-8"), 100000)
     return f"{salt}${key.hex()}"
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify a plain password against the stored PBKDF2 hash."""
+    """Verify a plain password against the stored PBKDF2 hash using constant-time comparison."""
     if not hashed_password or "$" not in hashed_password:
         return False
     try:
@@ -111,27 +114,30 @@ def get_current_user(
 
 
 def get_current_admin(current_user: User = Depends(get_current_user)) -> User:
-    """FastAPI dependency to enforce Administrator role."""
-    if current_user.role != "ADMIN":
+    """FastAPI dependency to enforce Administrator / HR Manager privileges."""
+    if current_user.role not in ADMIN_ROLES:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin privileges required",
+            detail="Admin privileges required (ADMIN, SUPER_ADMIN, or HR_MANAGER)",
         )
     return current_user
 
 
 def seed_default_admin(db: Session):
     """Seed default superadmin account if no admin exists."""
-    admin = db.query(User).filter(User.role == "ADMIN").first()
+    admin = db.query(User).filter(User.role.in_(ADMIN_ROLES)).first()
     if not admin:
         admin_user = User(
             user_code=DEFAULT_ADMIN_USER,
             full_name="System Administrator",
             email=DEFAULT_ADMIN_EMAIL,
-            role="ADMIN",
+            role="SUPER_ADMIN",
             password_hash=hash_password(DEFAULT_ADMIN_PASS),
             is_active=True,
         )
         db.add(admin_user)
         db.commit()
-        print(f"Default SuperAdmin created: {DEFAULT_ADMIN_USER} / {DEFAULT_ADMIN_PASS}")
+        logger.info(
+            "Default SuperAdmin created: username='%s' (Please change default password immediately)",
+            DEFAULT_ADMIN_USER,
+        )

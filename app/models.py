@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import (
     Column,
     Integer,
@@ -9,10 +9,13 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Text,
-    func,
 )
 from sqlalchemy.orm import relationship
 from app.database import Base
+
+
+def utc_now():
+    return datetime.now(timezone.utc)
 
 
 class Department(Base):
@@ -38,9 +41,10 @@ class User(Base):
     role = Column(String(20), default="USER", nullable=False)  # "ADMIN", "SUPER_ADMIN", "HR_MANAGER", "USER"
     designation = Column(String(100), default="Staff", nullable=True)
     hourly_rate = Column(Float, default=25.0, nullable=True)
+    grace_period_mins = Column(Integer, default=None, nullable=True)  # Custom grace time override (minutes)
     password_hash = Column(String(255), nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
 
     department = relationship("Department", back_populates="users")
     embeddings = relationship(
@@ -58,7 +62,7 @@ class FaceEmbedding(Base):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     embedding_json = Column(Text, nullable=False)  # JSON-encoded 128-element float list
     quality_score = Column(Float, default=1.0)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
 
     user = relationship("User", back_populates="embeddings")
 
@@ -76,7 +80,7 @@ class AttendanceLog(Base):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     timestamp = Column(DateTime, default=datetime.now, nullable=False, index=True)
     punch_type = Column(String(10), default="IN", nullable=False)  # "IN", "OUT"
-    status = Column(String(20), default="ON_TIME", nullable=False)  # "ON_TIME", "LATE", "HALF_DAY"
+    status = Column(String(20), default="ON_TIME", nullable=False)  # "ON_TIME", "LATE", "HALF_DAY", "EXCUSED"
     confidence_score = Column(Float, default=1.0)
     device_id = Column(String(50), default="KIOSK-01")
 

@@ -124,7 +124,63 @@ class TestFRASEnterprise(unittest.TestCase):
         self.assertGreater(len(csv_buf.getvalue()), 50)
         print("[OK] Payroll computation and CSV export passed.")
 
+    def test_06_manual_punch_and_employee_grace_time(self):
+        from app.schemas import ManualPunchRequest
+        from app.routers.attendance_router import manual_punch, parse_custom_datetime
+
+        # Test custom employee grace period
+        user = self.db.query(User).filter(User.user_code == "TEST_001").first()
+        self.assertIsNotNone(user)
+        user.grace_period_mins = 45
+        self.db.commit()
+        self.assertEqual(user.grace_period_mins, 45)
+
+        # Test custom datetime parser
+        dt = parse_custom_datetime("2026-10-26T09:30")
+        self.assertEqual(dt.hour, 9)
+        self.assertEqual(dt.minute, 30)
+
+        # Create mock admin
+        admin = self.db.query(User).filter(User.role.in_(("ADMIN", "SUPER_ADMIN"))).first()
+        if not admin:
+            admin = user
+
+        # Test manual IN punch with custom timestamp
+        req_in = ManualPunchRequest(
+            user_id=user.id,
+            punch_type="IN",
+            custom_timestamp="2026-10-26 09:15:00",
+            status="ON_TIME",
+            notes="Unit test custom punch in",
+        )
+        res_in = manual_punch(req_in, db=self.db, admin=admin)
+        self.assertTrue(res_in["success"])
+
+        # Test manual OUT punch
+        req_out = ManualPunchRequest(
+            user_id=user.id,
+            punch_type="OUT",
+            custom_timestamp="2026-10-26 17:15:00",
+            status="ON_TIME",
+            notes="Unit test custom punch out",
+        )
+        res_out = manual_punch(req_out, db=self.db, admin=admin)
+        self.assertTrue(res_out["success"])
+
+        # Test manual BOTH (full shift)
+        req_both = ManualPunchRequest(
+            user_id=user.id,
+            punch_type="BOTH",
+            custom_timestamp="2026-10-25 09:00:00",
+            out_timestamp="2026-10-25 17:00:00",
+            status="ON_TIME",
+            notes="Unit test full shift",
+        )
+        res_both = manual_punch(req_both, db=self.db, admin=admin)
+        self.assertTrue(res_both["success"])
+
+        print("[OK] Custom manual punch IN/OUT and employee grace time passed.")
+
 
 if __name__ == "__main__":
     unittest.main()
-
