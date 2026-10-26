@@ -3,160 +3,352 @@
 {% block title %}Admin Dashboard — FRAS Enterprise{% endblock %}
 
 {% block content %}
-<div style="max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px;">
+<div style="max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px;">
 
-  <!-- Dashboard Header -->
-  <div style="display: flex; justify-content: space-between; align-items: center;">
+  <!-- Minimalist Executive Header -->
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
     <div>
-      <h1 style="font-size: 1.8rem; font-weight: 800; color: var(--text-main);">
-        Administrator Dashboard
-      </h1>
-      <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 4px;">
-        High-accuracy biometric audit, real-time analytics, and workforce attendance monitoring.
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <h1 style="font-family: 'Outfit', sans-serif; font-size: 1.65rem; font-weight: 800; color: #ffffff; letter-spacing: -0.01em;">
+          Workforce Operations & Tracking
+        </h1>
+        <span class="role-badge {% if current_user.role == 'SUPER_ADMIN' %}role-super{% elif current_user.role == 'HR_MANAGER' %}role-hr{% else %}role-admin{% endif %}">
+          {{ current_user.role }} PRIVILEGES
+        </span>
+      </div>
+      <p style="color: var(--text-muted); font-size: 0.88rem; margin-top: 3px;">
+        Real-time facial verification analytics, attendance tracking, and workforce payroll overview.
       </p>
     </div>
 
-    <!-- Quick Action Toolbar -->
-    <div style="display: flex; gap: 12px;">
-      <a href="/admin/users" class="neo-btn neo-btn-primary">
-        <i data-feather="user-plus"></i> Enroll New User
+    <!-- Quick Action Bar -->
+    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+      <button onclick="openManualPunchModal()" class="neo-btn neo-btn-outline" title="Record manual punch override">
+        <i data-feather="edit-3" style="width: 15px; height: 15px;"></i> Manual Punch
+      </button>
+      <a href="/admin/payroll" class="neo-btn" style="background: rgba(99, 102, 241, 0.15); border-color: rgba(99, 102, 241, 0.35); color: #c7d2fe;">
+        <i data-feather="dollar-sign" style="width: 15px; height: 15px;"></i> Payroll Manager
       </a>
       <a href="/api/v1/attendance/export/excel" class="neo-btn neo-btn-success">
-        <i data-feather="download"></i> Export Excel (.xlsx)
+        <i data-feather="download" style="width: 15px; height: 15px;"></i> Export Excel
       </a>
-      <a href="/kiosk" class="neo-btn">
-        <i data-feather="external-link"></i> Launch Kiosk
+      <a href="/kiosk" class="neo-btn neo-btn-primary">
+        <i data-feather="external-link" style="width: 15px; height: 15px;"></i> Open Kiosk
       </a>
     </div>
   </div>
 
-  <!-- 4 Neomorphic KPI Metric Cards -->
-  <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;">
+  <!-- 4 Minimalist KPI Cards (Tracking & Payroll) -->
+  <div class="stat-card-grid">
 
-    <!-- Total Users -->
-    <div class="neo-card" style="display: flex; align-items: center; gap: 20px; padding: 24px;">
-      <div class="neo-card" style="width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--primary);">
-        <i data-feather="users" style="width: 28px; height: 28px;"></i>
+    <!-- Total Workforce -->
+    <div class="stat-card">
+      <div class="stat-icon-box" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa;">
+        <i data-feather="users" style="width: 24px; height: 24px;"></i>
       </div>
       <div>
-        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">
-          Total Registered
-        </div>
-        <div style="font-size: 1.8rem; font-weight: 800; color: var(--text-main); margin-top: 2px;">
-          {{ total_users }}
-        </div>
+        <div class="stat-label">Total Workforce</div>
+        <div class="stat-value">{{ total_users }}</div>
+        <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 2px;">Enrolled Profiles</div>
       </div>
     </div>
 
     <!-- Present Today -->
-    <div class="neo-card" style="display: flex; align-items: center; gap: 20px; padding: 24px;">
-      <div class="neo-card" style="width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--success);">
-        <i data-feather="check-circle" style="width: 28px; height: 28px;"></i>
+    <div class="stat-card">
+      <div class="stat-icon-box" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">
+        <i data-feather="check-circle" style="width: 24px; height: 24px;"></i>
       </div>
       <div>
-        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">
-          Present Today
-        </div>
-        <div style="font-size: 1.8rem; font-weight: 800; color: var(--text-main); margin-top: 2px;">
-          {{ present_today }}
-        </div>
+        <div class="stat-label">Present Today</div>
+        <div class="stat-value" style="color: #34d399;">{{ present_today }}</div>
+        <div style="font-size: 0.72rem; color: #34d399; margin-top: 2px;">{{ attendance_rate }}% Attendance Rate</div>
       </div>
     </div>
 
     <!-- Late Arrivals -->
-    <div class="neo-card" style="display: flex; align-items: center; gap: 20px; padding: 24px;">
-      <div class="neo-card" style="width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--warning);">
-        <i data-feather="alert-circle" style="width: 28px; height: 28px;"></i>
+    <div class="stat-card">
+      <div class="stat-icon-box" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">
+        <i data-feather="clock" style="width: 24px; height: 24px;"></i>
       </div>
       <div>
-        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">
-          Late Marks
-        </div>
-        <div style="font-size: 1.8rem; font-weight: 800; color: var(--text-main); margin-top: 2px;">
-          {{ late_count }}
-        </div>
+        <div class="stat-label">Late Arrivals</div>
+        <div class="stat-value" style="color: #fbbf24;">{{ late_count }}</div>
+        <div style="font-size: 0.72rem; color: #fbbf24; margin-top: 2px;">Outside Grace Window</div>
       </div>
     </div>
 
-    <!-- Attendance Rate % -->
-    <div class="neo-card" style="display: flex; align-items: center; gap: 20px; padding: 24px;">
-      <div class="neo-card" style="width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--info);">
-        <i data-feather="trending-up" style="width: 28px; height: 28px;"></i>
+    <!-- Estimated Period Payroll -->
+    <div class="stat-card">
+      <div class="stat-icon-box" style="background: rgba(99, 102, 241, 0.15); color: #a5b4fc;">
+        <i data-feather="dollar-sign" style="width: 24px; height: 24px;"></i>
       </div>
       <div>
-        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">
-          Attendance Rate
-        </div>
-        <div style="font-size: 1.8rem; font-weight: 800; color: var(--text-main); margin-top: 2px;">
-          {{ attendance_rate }}%
-        </div>
+        <div class="stat-label">Est. MTD Payroll</div>
+        <div class="stat-value" style="color: #a5b4fc;">${{ "{:,.2f}".format(payroll_summary.total_payout) }}</div>
+        <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 2px;">{{ payroll_summary.total_hours }} Tracked Hours</div>
       </div>
     </div>
 
   </div>
 
-  <!-- Recent Punches Matrix -->
-  <div class="neo-card">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-      <h3 style="font-size: 1.2rem; font-weight: 800; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
-        <i data-feather="activity" style="color: var(--primary);"></i> Real-Time Punch Activity
-      </h3>
-      <a href="/admin/reports" class="neo-btn" style="font-size: 0.85rem; padding: 8px 16px;">
-        View Full Logs <i data-feather="chevron-right" style="width: 14px; height: 14px;"></i>
-      </a>
+  <!-- Operational Grid: Live Tracking Activity & Payroll Snapshot -->
+  <div style="display: grid; grid-template-columns: 1.4fr 1.1fr; gap: 20px;">
+
+    <!-- Left: Real-Time Attendance Tracking Feed -->
+    <div class="neo-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.15rem; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 8px;">
+          <i data-feather="activity" style="width: 17px; height: 17px; color: var(--primary);"></i> Live Attendance Activity
+        </h3>
+        <a href="/admin/reports" class="neo-btn neo-btn-outline" style="font-size: 0.78rem; padding: 5px 12px;">
+          Full Audit Logs <i data-feather="arrow-right" style="width: 12px; height: 12px;"></i>
+        </a>
+      </div>
+
+      <div class="neo-table-wrapper">
+        <table class="neo-table">
+          <thead>
+            <tr>
+              <th>Employee</th>
+              <th>Department</th>
+              <th>Time</th>
+              <th>Punch</th>
+              <th>Status</th>
+              <th>Match</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if recent_punches %}
+              {% for log in recent_punches %}
+              <tr>
+                <td>
+                  <div style="font-weight: 700; color: #ffffff;">{{ log.user.full_name }}</div>
+                  <div style="font-size: 0.75rem; color: var(--text-muted); font-family: monospace;">{{ log.user.user_code }}</div>
+                </td>
+                <td><span style="font-size: 0.82rem;">{{ log.user.department.name if log.user.department else "General" }}</span></td>
+                <td><span style="font-family: monospace; font-size: 0.82rem;">{{ log.timestamp.strftime("%I:%M %p") }}</span></td>
+                <td>
+                  {% if log.punch_type == "IN" %}
+                    <span class="neo-badge neo-badge-info" style="font-size: 0.68rem; padding: 2px 8px;">IN</span>
+                  {% else %}
+                    <span class="neo-badge neo-badge-warning" style="font-size: 0.68rem; padding: 2px 8px;">OUT</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if log.status == "ON_TIME" %}
+                    <span class="neo-badge neo-badge-success" style="font-size: 0.68rem; padding: 2px 8px;">ON TIME</span>
+                  {% else %}
+                    <span class="neo-badge neo-badge-warning" style="font-size: 0.68rem; padding: 2px 8px;">LATE</span>
+                  {% endif %}
+                </td>
+                <td><span style="font-size: 0.8rem; font-weight: 700; color: #34d399;">{{ (log.confidence_score * 100) | round | int }}%</span></td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 26px;">
+                  No attendance logs recorded today yet.
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
     </div>
 
-    <div class="neo-table-wrapper">
-      <table class="neo-table">
-        <thead>
-          <tr>
-            <th>User Code</th>
-            <th>Name</th>
-            <th>Department</th>
-            <th>Date & Time</th>
-            <th>Type</th>
-            <th>Status</th>
-            <th>Confidence</th>
-            <th>Device</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% if recent_punches %}
-            {% for log in recent_punches %}
+    <!-- Right: Workforce Payroll Snapshot -->
+    <div class="neo-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <div>
+          <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.15rem; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 8px;">
+            <i data-feather="dollar-sign" style="width: 17px; height: 17px; color: #a5b4fc;"></i> Payroll Overview
+          </h3>
+          <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">
+            Pay Period: Current Month
+          </div>
+        </div>
+        <a href="/admin/payroll" class="neo-btn neo-btn-outline" style="font-size: 0.78rem; padding: 5px 12px;">
+          Manage Payroll <i data-feather="arrow-right" style="width: 12px; height: 12px;"></i>
+        </a>
+      </div>
+
+      <div class="neo-table-wrapper">
+        <table class="neo-table">
+          <thead>
             <tr>
-              <td><b>{{ log.user.user_code }}</b></td>
-              <td><b>{{ log.user.full_name }}</b></td>
-              <td>{{ log.user.department.name if log.user.department else "General" }}</td>
-              <td>{{ log.timestamp.strftime("%d %b %Y, %I:%M:%S %p") }}</td>
-              <td>
-                {% if log.punch_type == "IN" %}
-                  <span class="neo-badge neo-badge-info">CHECK-IN</span>
-                {% else %}
-                  <span class="neo-badge neo-badge-warning">CHECK-OUT</span>
-                {% endif %}
-              </td>
-              <td>
-                {% if log.status == "ON_TIME" %}
-                  <span class="neo-badge neo-badge-success">ON TIME</span>
-                {% else %}
-                  <span class="neo-badge neo-badge-warning">LATE</span>
-                {% endif %}
-              </td>
-              <td>{{ (log.confidence_score * 100) | round | int }}%</td>
-              <td><span style="font-family: monospace; font-size: 0.85rem; color: var(--text-muted);">{{ log.device_id }}</span></td>
+              <th>Employee</th>
+              <th>Days</th>
+              <th>Total Hours</th>
+              <th>Gross Pay</th>
+              <th>Status</th>
             </tr>
-            {% endfor %}
-          {% else %}
-            <tr>
-              <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 32px;">
-                No attendance logs recorded today.
-              </td>
-            </tr>
-          {% endif %}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {% if payroll_records %}
+              {% for rec in payroll_records %}
+              <tr>
+                <td>
+                  <div style="font-weight: 700; color: #ffffff;">{{ rec.full_name }}</div>
+                  <div style="font-size: 0.72rem; color: var(--text-muted);">{{ rec.designation }} • {{ rec.department }}</div>
+                </td>
+                <td><span style="font-weight: 700;">{{ rec.days_worked }}d</span></td>
+                <td><span style="font-family: monospace; font-weight: 600;">{{ rec.total_hours }}h</span></td>
+                <td><span style="font-weight: 800; color: #34d399;">${{ "{:,.2f}".format(rec.net_pay) }}</span></td>
+                <td>
+                  <span class="neo-badge {% if rec.status == 'APPROVED' %}neo-badge-success{% else %}neo-badge-info{% endif %}" style="font-size: 0.65rem; padding: 2px 7px;">
+                    {{ rec.status }}
+                  </span>
+                </td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 26px;">
+                  No payroll data available for this cycle.
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Quick Payroll Actions -->
+      <div style="margin-top: 14px; display: flex; justify-content: space-between; align-items: center; padding-top: 10px; border-top: 1px solid var(--border-subtle);">
+        <span style="font-size: 0.78rem; color: var(--text-muted);">Avg. Payout: ${{ "{:,.2f}".format(payroll_summary.average_payout) }} / staff</span>
+        <a href="/api/v1/attendance/payroll/export" class="neo-btn" style="font-size: 0.75rem; padding: 6px 12px;">
+          <i data-feather="file-text" style="width: 12px; height: 12px;"></i> Export Payroll CSV
+        </a>
+      </div>
     </div>
+
   </div>
 
 </div>
+
+<!-- Minimalist Manual Punch Override Modal -->
+<div id="manual-punch-modal" class="neo-modal-backdrop" style="display: none;">
+  <div class="neo-modal" style="max-width: 480px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 8px;">
+        <i data-feather="edit-3" style="width: 18px; height: 18px; color: var(--primary);"></i> Manual Attendance Override
+      </h3>
+      <button onclick="closeManualPunchModal()" class="neo-btn" style="padding: 6px; border-radius: 50%;">
+        <i data-feather="x" style="width: 16px; height: 16px;"></i>
+      </button>
+    </div>
+
+    <form id="manual-punch-form" onsubmit="submitManualPunch(event)" style="display: flex; flex-direction: column; gap: 16px;">
+      <div>
+        <label style="display: block; font-size: 0.78rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px;">
+          SELECT EMPLOYEE / USER *
+        </label>
+        <select id="manual-user-id" class="neo-select" required>
+          <option value="">Choose User...</option>
+          <!-- Populated dynamically -->
+        </select>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+        <div>
+          <label style="display: block; font-size: 0.78rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px;">
+            PUNCH TYPE
+          </label>
+          <select id="manual-punch-type" class="neo-select">
+            <option value="IN">CHECK-IN</option>
+            <option value="OUT">CHECK-OUT</option>
+          </select>
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.78rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px;">
+            STATUS
+          </label>
+          <select id="manual-status" class="neo-select">
+            <option value="ON_TIME">ON TIME</option>
+            <option value="LATE">LATE</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 0.78rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px;">
+          ADMIN REASON / NOTES
+        </label>
+        <input type="text" id="manual-notes" class="neo-input" placeholder="e.g. Card forgotten / Offsite duty approval">
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
+        <button type="button" onclick="closeManualPunchModal()" class="neo-btn">
+          Cancel
+        </button>
+        <button type="submit" id="btn-manual-submit" class="neo-btn neo-btn-primary">
+          <i data-feather="check"></i> Submit Punch
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  let cachedUsers = [];
+
+  async function openManualPunchModal() {
+    document.getElementById('manual-punch-modal').style.display = 'flex';
+    feather.replace();
+
+    if (!cachedUsers.length) {
+      try {
+        const res = await fetch('/api/v1/users');
+        cachedUsers = await res.json();
+        const sel = document.getElementById('manual-user-id');
+        sel.innerHTML = '<option value="">Choose Employee...</option>' + 
+          cachedUsers.map(u => `<option value="${u.id}">${u.full_name} (${u.user_code}) - ${u.department_name || 'General'}</option>`).join('');
+      } catch (err) {
+        showToast('Error loading users: ' + err.message, 'danger');
+      }
+    }
+  }
+
+  function closeManualPunchModal() {
+    document.getElementById('manual-punch-modal').style.display = 'none';
+  }
+
+  async function submitManualPunch(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btn-manual-submit');
+    const userId = parseInt(document.getElementById('manual-user-id').value);
+    const punchType = document.getElementById('manual-punch-type').value;
+    const status = document.getElementById('manual-status').value;
+    const notes = document.getElementById('manual-notes').value;
+
+    btn.disabled = true;
+    btn.innerHTML = '<i data-feather="loader" style="animation: spin 1s linear infinite;"></i> Saving...';
+    feather.replace();
+
+    try {
+      const res = await fetch('/api/v1/attendance/manual', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: userId,
+          punch_type: punchType,
+          status: status,
+          notes: notes
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Manual punch failed');
+
+      showToast(data.message, 'success');
+      closeManualPunchModal();
+      setTimeout(() => window.location.reload(), 700);
+    } catch (err) {
+      showToast(err.message, 'danger');
+      btn.disabled = false;
+      btn.innerHTML = '<i data-feather="check"></i> Submit Punch';
+      feather.replace();
+    }
+  }
+</script>
 {% endblock %}

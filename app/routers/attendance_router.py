@@ -16,6 +16,7 @@ from app.schemas import (
 )
 from app.services.attendance_engine import AttendanceEngine
 from app.services.export_service import ExportService
+from app.services.payroll_service import PayrollService
 from app.services.vision_engine import get_vision_engine
 
 router = APIRouter(prefix="/api/v1/attendance", tags=["Attendance Tracking"])
@@ -314,3 +315,45 @@ def manual_punch(
     db.refresh(log)
 
     return {"success": True, "message": f"Manual punch added for {user.full_name}"}
+
+
+@router.get("/payroll/summary")
+def get_payroll_summary(
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    department_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin),
+):
+    """Compute role-based payroll summary, total hours, and employee payouts."""
+    return PayrollService.compute_payroll(
+        db,
+        start_date=start_date,
+        end_date=end_date,
+        department_id=department_id,
+    )
+
+
+@router.get("/payroll/export")
+def export_payroll(
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    department_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin),
+):
+    """Export computed workforce payroll to downloadable CSV."""
+    data = PayrollService.compute_payroll(
+        db,
+        start_date=start_date,
+        end_date=end_date,
+        department_id=department_id,
+    )
+    stream = PayrollService.export_payroll_csv(data)
+    filename = f"payroll_report_{start_date or 'current'}_{end_date or 'period'}.csv"
+    return StreamingResponse(
+        stream,
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+

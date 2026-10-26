@@ -1,0 +1,407 @@
+{% extends "base.html" %}
+
+{% block title %}Workforce Payroll & Hours Tracking — FRAS Enterprise{% endblock %}
+
+{% block content %}
+<div style="max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px;">
+
+  <!-- Minimalist Executive Header -->
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+    <div>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <h1 style="font-family: 'Outfit', sans-serif; font-size: 1.65rem; font-weight: 800; color: #ffffff; letter-spacing: -0.01em;">
+          Payroll & Work Hours Management
+        </h1>
+        <span class="role-badge role-hr">
+          <i data-feather="check-circle" style="width: 11px; height: 11px;"></i> HR & COMPENSATION
+        </span>
+      </div>
+      <p style="color: var(--text-muted); font-size: 0.88rem; margin-top: 3px;">
+        Calculated from biometric punch timestamps, shift parameters, overtime, and punctuality records.
+      </p>
+    </div>
+
+    <!-- Export & Payout Actions -->
+    <div style="display: flex; gap: 10px; align-items: center;">
+      <button onclick="triggerPayrollExport()" class="neo-btn neo-btn-success">
+        <i data-feather="download" style="width: 15px; height: 15px;"></i> Export Payroll CSV
+      </button>
+      <button onclick="window.print()" class="neo-btn neo-btn-outline">
+        <i data-feather="printer" style="width: 15px; height: 15px;"></i> Print Summary
+      </button>
+    </div>
+  </div>
+
+  <!-- Filter & Period Control Bar -->
+  <div class="neo-card" style="padding: 16px 20px;">
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr) auto; gap: 14px; align-items: flex-end;">
+      
+      <div>
+        <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); margin-bottom: 5px;">
+          PAY PERIOD START
+        </label>
+        <input type="date" id="payroll-start" class="neo-input" value="{{ month_start_str }}">
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); margin-bottom: 5px;">
+          PAY PERIOD END
+        </label>
+        <input type="date" id="payroll-end" class="neo-input" value="{{ today_str }}">
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); margin-bottom: 5px;">
+          DEPARTMENT
+        </label>
+        <select id="payroll-dept" class="neo-select">
+          <option value="">All Departments</option>
+          {% for d in departments %}
+          <option value="{{ d.id }}">{{ d.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); margin-bottom: 5px;">
+          FILTER EMPLOYEE
+        </label>
+        <input type="text" id="payroll-search" oninput="filterPayrollRows()" class="neo-input" placeholder="Search by name or code...">
+      </div>
+
+      <div>
+        <button onclick="fetchPayroll()" class="neo-btn neo-btn-primary" style="padding: 10px 18px;">
+          <i data-feather="refresh-cw" style="width: 14px; height: 14px;"></i> Compute
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 4 Minimalist Payroll KPI Cards -->
+  <div class="stat-card-grid">
+
+    <!-- Total Gross Payout -->
+    <div class="stat-card">
+      <div class="stat-icon-box" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">
+        <i data-feather="dollar-sign" style="width: 24px; height: 24px;"></i>
+      </div>
+      <div>
+        <div class="stat-label">Total Gross Payout</div>
+        <div class="stat-value" id="kpi-total-payout" style="color: #34d399;">
+          ${{ "{:,.2f}".format(payroll_data.summary.total_payout) }}
+        </div>
+        <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 2px;">
+          <span id="kpi-emp-count">{{ payroll_data.summary.total_employees }}</span> Staff Processed
+        </div>
+      </div>
+    </div>
+
+    <!-- Regular Work Hours -->
+    <div class="stat-card">
+      <div class="stat-icon-box" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa;">
+        <i data-feather="clock" style="width: 24px; height: 24px;"></i>
+      </div>
+      <div>
+        <div class="stat-label">Tracked Hours</div>
+        <div class="stat-value" id="kpi-total-hours">
+          {{ payroll_data.summary.total_hours }}h
+        </div>
+        <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 2px;">Total Shift Duration</div>
+      </div>
+    </div>
+
+    <!-- Overtime Hours -->
+    <div class="stat-card">
+      <div class="stat-icon-box" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">
+        <i data-feather="zap" style="width: 24px; height: 24px;"></i>
+      </div>
+      <div>
+        <div class="stat-label">Overtime Hours</div>
+        <div class="stat-value" id="kpi-total-ot" style="color: #fbbf24;">
+          {{ payroll_data.summary.total_overtime }}h
+        </div>
+        <div style="font-size: 0.72rem; color: #fbbf24; margin-top: 2px;">1.5x Premium Rate</div>
+      </div>
+    </div>
+
+    <!-- Average Payout -->
+    <div class="stat-card">
+      <div class="stat-icon-box" style="background: rgba(99, 102, 241, 0.15); color: #a5b4fc;">
+        <i data-feather="trending-up" style="width: 24px; height: 24px;"></i>
+      </div>
+      <div>
+        <div class="stat-label">Average Payout</div>
+        <div class="stat-value" id="kpi-avg-payout" style="color: #a5b4fc;">
+          ${{ "{:,.2f}".format(payroll_data.summary.average_payout) }}
+        </div>
+        <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 2px;">Per Active Employee</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Detailed Payroll Records Table -->
+  <div class="neo-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <div>
+        <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.15rem; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 8px;">
+          <i data-feather="list" style="width: 17px; height: 17px; color: var(--primary);"></i> Workforce Compensation Breakdown
+        </h3>
+        <span id="period-label" style="font-size: 0.75rem; color: var(--text-muted);">
+          Period: {{ payroll_data.period.label }}
+        </span>
+      </div>
+      <span id="payroll-rows-count" class="neo-badge neo-badge-info" style="font-size: 0.7rem;">
+        {{ payroll_data.records|length }} EMPLOYEES
+      </span>
+    </div>
+
+    <div class="neo-table-wrapper">
+      <table class="neo-table">
+        <thead>
+          <tr>
+            <th>Employee Code</th>
+            <th>Full Name</th>
+            <th>Designation & Dept</th>
+            <th>Rate / Hr</th>
+            <th>Days</th>
+            <th>Reg Hours</th>
+            <th>OT Hours</th>
+            <th>Late Ded.</th>
+            <th>Net Payout</th>
+            <th>Status</th>
+            <th style="text-align: right;">Payslip</th>
+          </tr>
+        </thead>
+        <tbody id="payroll-table-body">
+          {% for r in payroll_data.records %}
+          <tr id="payroll-row-{{ r.user_id }}" data-search="{{ r.full_name | lower }} {{ r.user_code | lower }}">
+            <td><b style="font-family: monospace; color: #93c5fd;">{{ r.user_code }}</b></td>
+            <td>
+              <div style="font-weight: 700; color: #ffffff;">{{ r.full_name }}</div>
+              <span class="role-badge {% if r.role == 'ADMIN' %}role-admin{% else %}role-user{% endif %}" style="font-size: 0.65rem;">
+                {{ r.role }}
+              </span>
+            </td>
+            <td>
+              <div style="font-weight: 600;">{{ r.designation }}</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">{{ r.department }}</div>
+            </td>
+            <td><span style="font-family: monospace;">${{ "{:,.2f}".format(r.hourly_rate) }}</span></td>
+            <td><span style="font-weight: 700;">{{ r.days_worked }}d</span></td>
+            <td><span style="font-family: monospace;">{{ r.regular_hours }}h</span></td>
+            <td><span style="font-family: monospace; color: #fbbf24;">{{ r.overtime_hours }}h</span></td>
+            <td><span style="font-family: monospace; color: #fb7185;">-${{ "{:,.2f}".format(r.deductions) }}</span></td>
+            <td><span style="font-size: 1rem; font-weight: 800; color: #34d399;">${{ "{:,.2f}".format(r.net_pay) }}</span></td>
+            <td>
+              <span class="neo-badge {% if r.status == 'APPROVED' %}neo-badge-success{% else %}neo-badge-info{% endif %}" style="font-size: 0.68rem;">
+                {{ r.status }}
+              </span>
+            </td>
+            <td style="text-align: right;">
+              <button onclick="viewPayslip({{ r | tojson | forceescape }})" class="neo-btn neo-btn-outline" style="padding: 4px 10px; font-size: 0.75rem;">
+                <i data-feather="file-text" style="width: 12px; height: 12px;"></i> View
+              </button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- Minimalist Payslip Detail Modal -->
+<div id="payslip-modal" class="neo-modal-backdrop" style="display: none;">
+  <div class="neo-modal" style="max-width: 540px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px;">
+      <div>
+        <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.3rem; font-weight: 800; color: #ffffff;">
+          Biometric Payslip Summary
+        </h3>
+        <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">FRAS Enterprise Automated Compensation</p>
+      </div>
+      <button onclick="closePayslipModal()" class="neo-btn" style="padding: 6px; border-radius: 50%;">
+        <i data-feather="x" style="width: 16px; height: 16px;"></i>
+      </button>
+    </div>
+
+    <div id="payslip-modal-content">
+      <!-- Injected dynamically -->
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--border-subtle);">
+      <button onclick="closePayslipModal()" class="neo-btn">Close</button>
+      <button onclick="window.print()" class="neo-btn neo-btn-primary">
+        <i data-feather="printer" style="width: 14px; height: 14px;"></i> Print Payslip
+      </button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  let currentPayrollData = {{ payroll_data | tojson }};
+
+  async function fetchPayroll() {
+    const start = document.getElementById('payroll-start').value;
+    const end = document.getElementById('payroll-end').value;
+    const dept = document.getElementById('payroll-dept').value;
+
+    const params = new URLSearchParams();
+    if (start) params.append('start_date', start);
+    if (end) params.append('end_date', end);
+    if (dept) params.append('department_id', dept);
+
+    try {
+      const res = await fetch(`/api/v1/attendance/payroll/summary?${params.toString()}`);
+      if (!res.ok) throw new Error('Could not compute payroll');
+      currentPayrollData = await res.json();
+      renderPayrollData(currentPayrollData);
+      showToast('Payroll recomputed successfully', 'success');
+    } catch (err) {
+      showToast(err.message, 'danger');
+    }
+  }
+
+  function renderPayrollData(data) {
+    document.getElementById('kpi-total-payout').textContent = `$${data.summary.total_payout.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+    document.getElementById('kpi-emp-count').textContent = data.summary.total_employees;
+    document.getElementById('kpi-total-hours').textContent = `${data.summary.total_hours}h`;
+    document.getElementById('kpi-total-ot').textContent = `${data.summary.total_overtime}h`;
+    document.getElementById('kpi-avg-payout').textContent = `$${data.summary.average_payout.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+    document.getElementById('period-label').textContent = `Period: ${data.period.label}`;
+    document.getElementById('payroll-rows-count').textContent = `${data.records.length} EMPLOYEES`;
+
+    const tbody = document.getElementById('payroll-table-body');
+    if (!data.records.length) {
+      tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: var(--text-muted); padding: 26px;">No payroll records found for selected period.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = data.records.map(r => {
+      const jsonStr = JSON.stringify(r).replace(/"/g, '&quot;');
+      const statusBadge = r.status === 'APPROVED' 
+        ? '<span class="neo-badge neo-badge-success" style="font-size: 0.68rem;">APPROVED</span>' 
+        : '<span class="neo-badge neo-badge-info" style="font-size: 0.68rem;">NO LOGS</span>';
+
+      return `
+        <tr id="payroll-row-${r.user_id}" data-search="${r.full_name.toLowerCase()} ${r.user_code.toLowerCase()}">
+          <td><b style="font-family: monospace; color: #93c5fd;">${r.user_code}</b></td>
+          <td>
+            <div style="font-weight: 700; color: #ffffff;">${r.full_name}</div>
+            <span class="role-badge ${r.role === 'ADMIN' ? 'role-admin' : 'role-user'}" style="font-size: 0.65rem;">${r.role}</span>
+          </td>
+          <td>
+            <div style="font-weight: 600;">${r.designation}</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">${r.department}</div>
+          </td>
+          <td><span style="font-family: monospace;">$${r.hourly_rate.toFixed(2)}</span></td>
+          <td><span style="font-weight: 700;">${r.days_worked}d</span></td>
+          <td><span style="font-family: monospace;">${r.regular_hours}h</span></td>
+          <td><span style="font-family: monospace; color: #fbbf24;">${r.overtime_hours}h</span></td>
+          <td><span style="font-family: monospace; color: #fb7185;">-$${r.deductions.toFixed(2)}</span></td>
+          <td><span style="font-size: 1rem; font-weight: 800; color: #34d399;">$${r.net_pay.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span></td>
+          <td>${statusBadge}</td>
+          <td style="text-align: right;">
+            <button onclick="viewPayslip(${jsonStr})" class="neo-btn neo-btn-outline" style="padding: 4px 10px; font-size: 0.75rem;">
+              <i data-feather="file-text" style="width: 12px; height: 12px;"></i> View
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+    feather.replace();
+  }
+
+  function filterPayrollRows() {
+    const q = document.getElementById('payroll-search').value.toLowerCase().trim();
+    const rows = document.querySelectorAll('#payroll-table-body tr');
+    rows.forEach(r => {
+      const searchData = r.getAttribute('data-search') || '';
+      if (!q || searchData.includes(q)) {
+        r.style.display = '';
+      } else {
+        r.style.display = 'none';
+      }
+    });
+  }
+
+  function triggerPayrollExport() {
+    const start = document.getElementById('payroll-start').value;
+    const end = document.getElementById('payroll-end').value;
+    const dept = document.getElementById('payroll-dept').value;
+
+    const params = new URLSearchParams();
+    if (start) params.append('start_date', start);
+    if (end) params.append('end_date', end);
+    if (dept) params.append('department_id', dept);
+
+    window.location.href = `/api/v1/attendance/payroll/export?${params.toString()}`;
+  }
+
+  function viewPayslip(r) {
+    const modal = document.getElementById('payslip-modal');
+    const container = document.getElementById('payslip-modal-content');
+
+    container.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18px;">
+        <div>
+          <div style="font-size: 1.25rem; font-weight: 800; color: #ffffff;">${r.full_name}</div>
+          <div style="font-size: 0.85rem; color: #94a3b8; font-family: monospace;">Employee ID: ${r.user_code}</div>
+        </div>
+        <div style="text-align: right;">
+          <div style="font-size: 0.85rem; font-weight: 700; color: #60a5fa;">${r.department}</div>
+          <div style="font-size: 0.75rem; color: #94a3b8;">${r.designation}</div>
+        </div>
+      </div>
+
+      <div class="neo-card-inset" style="padding: 14px; margin-bottom: 16px;">
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; text-align: center;">
+          <div>
+            <div style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">DAYS WORKED</div>
+            <div style="font-size: 1.15rem; font-weight: 800; color: #ffffff; margin-top: 2px;">${r.days_worked} Days</div>
+          </div>
+          <div>
+            <div style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">BASE RATE</div>
+            <div style="font-size: 1.15rem; font-weight: 800; color: #60a5fa; margin-top: 2px;">$${r.hourly_rate.toFixed(2)}/hr</div>
+          </div>
+          <div>
+            <div style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">TOTAL HOURS</div>
+            <div style="font-size: 1.15rem; font-weight: 800; color: #ffffff; margin-top: 2px;">${r.total_hours} hrs</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px; font-size: 0.88rem;">
+        <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border-subtle);">
+          <span style="color: var(--text-muted);">Regular Pay (${r.regular_hours} hrs @ $${r.hourly_rate.toFixed(2)})</span>
+          <span style="font-weight: 700; font-family: monospace;">$${r.base_pay.toFixed(2)}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border-subtle);">
+          <span style="color: var(--text-muted);">Overtime Pay (${r.overtime_hours} hrs @ 1.5x)</span>
+          <span style="font-weight: 700; font-family: monospace; color: #fbbf24;">+$${r.overtime_pay.toFixed(2)}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border-subtle);">
+          <span style="color: var(--text-muted);">Late Penalties (${r.late_marks} mark(s))</span>
+          <span style="font-weight: 700; font-family: monospace; color: #fb7185;">-$${r.deductions.toFixed(2)}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 12px 0 4px; font-size: 1.15rem; font-weight: 800;">
+          <span style="color: #ffffff;">Net Disbursed Payout</span>
+          <span style="color: #34d399; font-family: monospace;">$${r.net_pay.toFixed(2)}</span>
+        </div>
+      </div>
+    `;
+
+    modal.style.display = 'flex';
+    feather.replace();
+  }
+
+  function closePayslipModal() {
+    document.getElementById('payslip-modal').style.display = 'none';
+  }
+</script>
+{% endblock %}

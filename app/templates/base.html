@@ -3,82 +3,96 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}FRAS Enterprise — Face Recognition Attendance System{% endblock %}</title>
+  <title>{% block title %}FRAS — Biometric Attendance & Workforce Payroll{% endblock %}</title>
   
-  <!-- Inter Font -->
+  <!-- Inter & Outfit Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
   
   <!-- Feather Icons -->
   <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
   
-  <!-- Neomorphism CSS -->
+  <!-- Minimalist Design System CSS -->
   <link rel="stylesheet" href="/static/css/neomorphism.css">
   
   {% block extra_head %}{% endblock %}
 </head>
 <body>
 
-  <!-- Navigation Bar -->
+  <!-- Minimalist Sticky Navigation Bar -->
   <header class="neo-nav">
+    <!-- Brand Identity -->
     <a href="/kiosk" class="neo-logo">
       <div class="neo-logo-icon">
-        <i data-feather="camera"></i>
+        <i data-feather="scan" style="width: 20px; height: 20px;"></i>
       </div>
-      <span>FRAS <span style="color: var(--primary);">ENTERPRISE</span></span>
+      <div>
+        <span style="font-family: 'Outfit', sans-serif; font-size: 1.15rem; font-weight: 800; letter-spacing: -0.01em;">FRAS</span>
+        <span style="font-size: 0.65rem; font-weight: 700; color: var(--primary); letter-spacing: 0.08em; text-transform: uppercase; margin-left: 6px; padding: 2px 6px; background: var(--primary-subtle); border-radius: var(--radius-xs);">BIOMETRIC</span>
+      </div>
     </a>
 
-    <!-- Center Clock -->
-    <div style="display: flex; align-items: center; gap: 16px;">
-      <div class="neo-card-inset" style="padding: 6px 18px; border-radius: var(--radius-full); font-size: 0.9rem; font-weight: 600; color: var(--text-muted);">
-        <i data-feather="calendar" style="width: 14px; height: 14px; vertical-align: middle; margin-right: 4px;"></i>
+    <!-- Center Live Clock & System Heartbeat -->
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div class="neo-card-inset" style="padding: 5px 16px; border-radius: var(--radius-full); font-size: 0.85rem; font-weight: 600; color: var(--text-muted); display: flex; align-items: center; gap: 8px;">
+        <span class="radar-pulse-dot" title="Biometric Engine Active"></span>
         <span>{{ today_date }}</span>
-        <span style="margin: 0 8px; opacity: 0.4;">|</span>
-        <span id="nav-digital-clock" style="color: var(--primary); font-family: monospace; font-size: 1rem; font-weight: 700;">--:--:--</span>
+        <span style="opacity: 0.3;">•</span>
+        <span id="nav-digital-clock" style="color: #60a5fa; font-family: 'Inter', monospace; font-size: 0.95rem; font-weight: 700; letter-spacing: 0.04em;">--:--:--</span>
       </div>
     </div>
 
-    <!-- Navigation Links -->
-    <nav style="display: flex; align-items: center; gap: 12px;">
+    <!-- Right: Role Badges & Navigation Links -->
+    <nav class="nav-link-group">
       <a href="/kiosk" class="neo-btn {% if request.url.path == '/kiosk' %}active{% endif %}">
-        <i data-feather="video"></i> Kiosk Mode
+        <i data-feather="video" style="width: 15px; height: 15px;"></i> Kiosk Mode
       </a>
       
-      {% if current_user and current_user.role == 'ADMIN' %}
-      <a href="/admin" class="neo-btn {% if request.url.path == '/admin' %}active{% endif %}">
-        <i data-feather="grid"></i> Dashboard
-      </a>
-      <a href="/admin/users" class="neo-btn {% if request.url.path == '/admin/users' %}active{% endif %}">
-        <i data-feather="users"></i> Users
-      </a>
-      <a href="/admin/reports" class="neo-btn {% if request.url.path == '/admin/reports' %}active{% endif %}">
-        <i data-feather="file-text"></i> Reports
-      </a>
-      <button onclick="logoutAdmin()" class="neo-btn neo-btn-danger" style="padding: 10px 18px;">
-        <i data-feather="log-out"></i>
-      </button>
+      {% if current_user and current_user.role in ['ADMIN', 'SUPER_ADMIN', 'HR_MANAGER'] %}
+        <a href="/admin" class="neo-btn {% if request.url.path == '/admin' %}active{% endif %}">
+          <i data-feather="grid" style="width: 15px; height: 15px;"></i> Dashboard
+        </a>
+        <a href="/admin/reports" class="neo-btn {% if request.url.path == '/admin/reports' %}active{% endif %}">
+          <i data-feather="activity" style="width: 15px; height: 15px;"></i> Tracking
+        </a>
+        <a href="/admin/payroll" class="neo-btn {% if request.url.path == '/admin/payroll' %}active{% endif %}">
+          <i data-feather="dollar-sign" style="width: 15px; height: 15px;"></i> Payroll
+        </a>
+        <a href="/admin/users" class="neo-btn {% if request.url.path == '/admin/users' %}active{% endif %}">
+          <i data-feather="users" style="width: 15px; height: 15px;"></i> Users
+        </a>
+
+        <!-- User Role Profile Badge -->
+        <div style="display: flex; align-items: center; gap: 8px; margin-left: 6px; padding-left: 10px; border-left: 1px solid var(--border-subtle);">
+          <span class="role-badge {% if current_user.role == 'SUPER_ADMIN' %}role-super{% elif current_user.role == 'HR_MANAGER' %}role-hr{% else %}role-admin{% endif %}">
+            <i data-feather="shield" style="width: 11px; height: 11px;"></i> {{ current_user.role }}
+          </span>
+          <button onclick="logoutAdmin()" class="neo-btn neo-btn-danger" style="padding: 7px 12px; border-radius: var(--radius-sm);" title="Sign Out">
+            <i data-feather="log-out" style="width: 15px; height: 15px;"></i>
+          </button>
+        </div>
       {% else %}
-      <a href="/login" class="neo-btn neo-btn-primary">
-        <i data-feather="lock"></i> Admin Login
-      </a>
+        <a href="/login" class="neo-btn neo-btn-primary">
+          <i data-feather="lock" style="width: 15px; height: 15px;"></i> Admin Sign In
+        </a>
       {% endif %}
     </nav>
   </header>
 
-  <!-- Main Content Container -->
-  <main style="flex: 1; padding: 24px 32px;">
+  <!-- Main Content Viewport -->
+  <main style="flex: 1; padding: 22px 28px;">
     {% block content %}{% endblock %}
   </main>
 
-  <!-- Toast Message Container -->
+  <!-- Global Toast Notifications -->
   <div id="toast-container"></div>
 
   <script>
     // Initialize Feather Icons
     feather.replace();
 
-    // Digital Clock
+    // High-precision Digital Clock
     function updateClock() {
       const now = new Date();
       const clockEl = document.getElementById('nav-digital-clock');
@@ -89,36 +103,36 @@
     setInterval(updateClock, 1000);
     updateClock();
 
-    // Show Neomorphic Toast
+    // Minimalist Toast Notification System
     function showToast(message, type = 'info') {
       const container = document.getElementById('toast-container');
       const toast = document.createElement('div');
       toast.className = 'neo-toast';
       
       let icon = 'info';
-      let color = 'var(--info)';
-      if (type === 'success') { icon = 'check-circle'; color = 'var(--success)'; }
-      if (type === 'danger') { icon = 'alert-triangle'; color = 'var(--danger)'; }
-      if (type === 'warning') { icon = 'alert-circle'; color = 'var(--warning)'; }
+      let iconColor = 'var(--info)';
+      if (type === 'success') { icon = 'check-circle'; iconColor = 'var(--success)'; }
+      if (type === 'danger') { icon = 'alert-triangle'; iconColor = 'var(--danger)'; }
+      if (type === 'warning') { icon = 'alert-circle'; iconColor = 'var(--warning)'; }
 
       toast.innerHTML = `
-        <div style="color: ${color}; display: flex; align-items: center;">
-          <i data-feather="${icon}"></i>
+        <div style="color: ${iconColor}; display: flex; align-items: center;">
+          <i data-feather="${icon}" style="width: 18px; height: 18px;"></i>
         </div>
-        <div style="font-weight: 600; font-size: 0.95rem;">${message}</div>
+        <div style="font-weight: 600; font-size: 0.88rem; color: #f8fafc;">${message}</div>
       `;
       container.appendChild(toast);
       feather.replace();
 
       setTimeout(() => {
         toast.style.opacity = '0';
-        toast.style.transform = 'translateY(20px)';
-        toast.style.transition = 'all 0.3s ease';
-        setTimeout(() => toast.remove(), 300);
+        toast.style.transform = 'translateY(15px)';
+        toast.style.transition = 'all 0.25s ease';
+        setTimeout(() => toast.remove(), 250);
       }, 4000);
     }
 
-    // Logout
+    // Sign out
     async function logoutAdmin() {
       try {
         await fetch('/api/v1/auth/logout', { method: 'POST' });

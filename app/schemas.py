@@ -25,6 +25,8 @@ class UserBase(BaseModel):
     email: Optional[str] = None
     department_id: Optional[int] = None
     role: str = "USER"
+    designation: Optional[str] = "Staff"
+    hourly_rate: Optional[float] = 25.0
     is_active: bool = True
 
 
@@ -36,6 +38,9 @@ class UserUpdate(BaseModel):
     full_name: Optional[str] = None
     email: Optional[str] = None
     department_id: Optional[int] = None
+    designation: Optional[str] = None
+    hourly_rate: Optional[float] = None
+    role: Optional[str] = None
     is_active: Optional[bool] = None
 
 
@@ -52,6 +57,9 @@ class FaceEnrollRequest(BaseModel):
     full_name: str
     email: Optional[str] = None
     department_id: Optional[int] = None
+    designation: Optional[str] = "Staff"
+    hourly_rate: Optional[float] = 25.0
+    role: Optional[str] = "USER"
     frames: List[str]  # List of base64 data URLs captured by the browser
 
 

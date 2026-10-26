@@ -3,36 +3,48 @@
 {% block title %}User Directory & Biometrics — FRAS Enterprise{% endblock %}
 
 {% block content %}
-<div style="max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px;">
+<div style="max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px;">
 
-  <!-- Header & Add User Button -->
-  <div style="display: flex; justify-content: space-between; align-items: center;">
+  <!-- Minimalist Executive Header -->
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
     <div>
-      <h1 style="font-size: 1.8rem; font-weight: 800; color: var(--text-main);">
-        Registered Users & Biometrics
-      </h1>
-      <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 4px;">
-        Manage student/employee profiles and capture biometric face embeddings via browser webcam.
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <h1 style="font-family: 'Outfit', sans-serif; font-size: 1.65rem; font-weight: 800; color: #ffffff; letter-spacing: -0.01em;">
+          Workforce Directory & Biometrics
+        </h1>
+        <span class="role-badge role-super">
+          <i data-feather="users" style="width: 11px; height: 11px;"></i> ENROLLMENT SUITE
+        </span>
+      </div>
+      <p style="color: var(--text-muted); font-size: 0.88rem; margin-top: 3px;">
+        Manage student & employee accounts, configure hourly wage parameters, and capture deep metric face vectors.
       </p>
     </div>
 
     <button onclick="openEnrollModal()" class="neo-btn neo-btn-primary">
-      <i data-feather="user-plus"></i> Enroll New User
+      <i data-feather="user-plus" style="width: 15px; height: 15px;"></i> Enroll New User
     </button>
   </div>
 
-  <!-- Users Table -->
+  <!-- Users Table Card -->
   <div class="neo-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+      <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.15rem; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 8px;">
+        <i data-feather="user-check" style="width: 17px; height: 17px; color: var(--primary);"></i> Enrolled Personnel
+      </h3>
+      <span class="neo-badge neo-badge-info" style="font-size: 0.7rem;">{{ users|length }} REGISTERED</span>
+    </div>
+
     <div class="neo-table-wrapper">
       <table class="neo-table">
         <thead>
           <tr>
-            <th>User Code / Roll</th>
-            <th>Full Name</th>
-            <th>Email</th>
-            <th>Department</th>
-            <th>Biometrics</th>
-            <th>Created At</th>
+            <th>Employee Code</th>
+            <th>Full Name & Role</th>
+            <th>Designation & Dept</th>
+            <th>Wage Rate</th>
+            <th>Biometric Status</th>
+            <th>Enrolled Date</th>
             <th style="text-align: right;">Action</th>
           </tr>
         </thead>
@@ -40,31 +52,44 @@
           {% if users %}
             {% for u in users %}
             <tr id="user-row-{{ u.id }}">
-              <td><b>{{ u.user_code }}</b></td>
-              <td><b>{{ u.full_name }}</b></td>
-              <td>{{ u.email or "—" }}</td>
-              <td>{{ u.department.name if u.department else "General" }}</td>
+              <td><b style="font-family: monospace; color: #93c5fd;">{{ u.user_code }}</b></td>
+              <td>
+                <div style="font-weight: 700; color: #ffffff;">{{ u.full_name }}</div>
+                <div style="display: flex; gap: 6px; margin-top: 2px;">
+                  <span class="role-badge {% if u.role == 'ADMIN' %}role-admin{% elif u.role == 'SUPER_ADMIN' %}role-super{% else %}role-user{% endif %}" style="font-size: 0.65rem;">
+                    {{ u.role }}
+                  </span>
+                  {% if u.email %}
+                  <span style="font-size: 0.72rem; color: var(--text-muted);">{{ u.email }}</span>
+                  {% endif %}
+                </div>
+              </td>
+              <td>
+                <div style="font-weight: 600;">{{ u.designation or "Staff" }}</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">{{ u.department.name if u.department else "General" }}</div>
+              </td>
+              <td><span style="font-family: monospace; font-weight: 700; color: #60a5fa;">${{ "{:,.2f}".format(u.hourly_rate or 25.0) }}/hr</span></td>
               <td>
                 {% if u.embeddings and u.embeddings|length > 0 %}
-                  <span class="neo-badge neo-badge-success">
-                    <i data-feather="check" style="width: 12px; height: 12px;"></i> ENROLLED
+                  <span class="neo-badge neo-badge-success" style="font-size: 0.68rem;">
+                    <i data-feather="check" style="width: 10px; height: 10px;"></i> ENROLLED
                   </span>
                 {% else %}
-                  <span class="neo-badge neo-badge-warning">NO EMBEDDING</span>
+                  <span class="neo-badge neo-badge-warning" style="font-size: 0.68rem;">NO EMBEDDING</span>
                 {% endif %}
               </td>
-              <td>{{ u.created_at.strftime("%d %b %Y") }}</td>
+              <td><span style="font-size: 0.82rem; color: var(--text-muted);">{{ u.created_at.strftime("%d %b %Y") }}</span></td>
               <td style="text-align: right;">
-                <button onclick="deleteUser({{ u.id }}, '{{ u.full_name }}')" class="neo-btn neo-btn-danger" style="padding: 6px 14px; font-size: 0.8rem;">
-                  <i data-feather="trash-2" style="width: 14px; height: 14px;"></i> Delete
+                <button onclick="deleteUser({{ u.id }}, '{{ u.full_name }}')" class="neo-btn neo-btn-danger" style="padding: 5px 12px; font-size: 0.75rem;">
+                  <i data-feather="trash-2" style="width: 12px; height: 12px;"></i> Delete
                 </button>
               </td>
             </tr>
             {% endfor %}
           {% else %}
             <tr>
-              <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 32px;">
-                No registered users found. Click "Enroll New User" to add the first profile.
+              <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 28px;">
+                No registered users found. Click "Enroll New User" to capture biometric profiles.
               </td>
             </tr>
           {% endif %}
@@ -75,46 +100,49 @@
 
 </div>
 
-<!-- Neomorphic Enrollment Modal -->
+<!-- Minimalist Biometric Enrollment Modal -->
 <div id="enroll-modal" class="neo-modal-backdrop" style="display: none;">
   <div class="neo-modal">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-      <h3 style="font-size: 1.3rem; font-weight: 800; color: var(--text-main); display: flex; align-items: center; gap: 10px;">
-        <i data-feather="camera" style="color: var(--primary);"></i> Biometric Face Enrollment
-      </h3>
-      <button onclick="closeEnrollModal()" class="neo-btn" style="padding: 8px 12px; border-radius: 50%;">
-        <i data-feather="x"></i>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px;">
+      <div>
+        <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.3rem; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 8px;">
+          <i data-feather="camera" style="width: 18px; height: 18px; color: var(--primary);"></i> Biometric Face Enrollment
+        </h3>
+        <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">Captures 5-frame deep metric facial embedding</p>
+      </div>
+      <button onclick="closeEnrollModal()" class="neo-btn" style="padding: 6px; border-radius: 50%;">
+        <i data-feather="x" style="width: 16px; height: 16px;"></i>
       </button>
     </div>
 
-    <!-- Step 1: User Form -->
-    <form id="enroll-form" onsubmit="startBiometricCapture(event)" style="display: flex; flex-direction: column; gap: 16px;">
+    <!-- User Information & Enrollment Form -->
+    <form id="enroll-form" onsubmit="startBiometricCapture(event)" style="display: flex; flex-direction: column; gap: 14px;">
       
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
         <div>
-          <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px;">
+          <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); margin-bottom: 5px;">
             USER CODE / ROLL ID *
           </label>
-          <input type="text" id="enroll-code" class="neo-input" placeholder="e.g. CS202401" required>
+          <input type="text" id="enroll-code" class="neo-input" placeholder="e.g. EMP-104 or CS2026" required>
         </div>
         <div>
-          <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px;">
+          <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); margin-bottom: 5px;">
             FULL NAME *
           </label>
-          <input type="text" id="enroll-name" class="neo-input" placeholder="e.g. John Doe" required>
+          <input type="text" id="enroll-name" class="neo-input" placeholder="e.g. Alex Morgan" required>
         </div>
       </div>
 
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
         <div>
-          <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px;">
+          <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); margin-bottom: 5px;">
             EMAIL ADDRESS
           </label>
-          <input type="email" id="enroll-email" class="neo-input" placeholder="user@domain.com">
+          <input type="email" id="enroll-email" class="neo-input" placeholder="alex@company.com">
         </div>
         <div>
-          <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px;">
-            DEPARTMENT / CLASS
+          <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); margin-bottom: 5px;">
+            DEPARTMENT
           </label>
           <select id="enroll-dept" class="neo-select">
             {% for d in departments %}
@@ -124,35 +152,52 @@
         </div>
       </div>
 
-      <!-- Step 2: Camera Viewfinder in Modal -->
-      <div style="margin-top: 10px;">
-        <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px;">
-          LIVE BIOMETRIC CAPTURE (LOOK DIRECTLY AT CAMERA)
-        </label>
-        <div class="neo-viewfinder" style="height: 260px; border-radius: var(--radius-md);">
-          <video id="modal-video" autoplay playsinline muted></video>
-          <canvas id="modal-canvas" style="display: none;"></canvas>
+      <!-- Designation & Wage Rate Fields for Payroll -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div>
+          <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); margin-bottom: 5px;">
+            DESIGNATION / TITLE
+          </label>
+          <input type="text" id="enroll-desig" class="neo-input" placeholder="e.g. Engineer, Student, Analyst" value="Staff">
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); margin-bottom: 5px;">
+            HOURLY PAYROLL WAGE ($)
+          </label>
+          <input type="number" step="0.5" id="enroll-rate" class="neo-input" placeholder="25.00" value="25.0">
         </div>
       </div>
 
-      <!-- Progress Meter -->
-      <div id="enroll-progress-box" style="display: none; margin-top: 10px;">
-        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 700; margin-bottom: 6px;">
-          <span id="enroll-progress-label">Capturing Face Embeddings...</span>
-          <span id="enroll-progress-count">0 / 5 Frames</span>
+      <!-- Live Camera Viewfinder in Modal -->
+      <div style="margin-top: 6px;">
+        <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px;">
+          LIVE WEBCAM PREVIEW (LOOK DIRECTLY AT CAMERA)
+        </label>
+        <div class="neo-viewfinder" style="height: 230px; border-radius: var(--radius-sm);">
+          <video id="modal-video" autoplay playsinline muted></video>
+          <canvas id="modal-canvas" style="display: none;"></canvas>
+          <div class="scan-laser-line" style="animation-duration: 2s;"></div>
         </div>
-        <div class="neo-card-inset" style="padding: 4px; border-radius: var(--radius-full);">
-          <div id="enroll-progress-bar" style="height: 8px; width: 0%; background: linear-gradient(90deg, #3b82f6, #10b981); border-radius: var(--radius-full); transition: width 0.3s ease;"></div>
+      </div>
+
+      <!-- 5-Frame Capture Progress Meter -->
+      <div id="enroll-progress-box" style="display: none; margin-top: 8px;">
+        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 700; margin-bottom: 6px;">
+          <span id="enroll-progress-label" style="color: #60a5fa;">Extracting Deep Metric Embeddings...</span>
+          <span id="enroll-progress-count" style="color: #ffffff;">0 / 5 Frames</span>
+        </div>
+        <div class="neo-card-inset" style="padding: 3px; border-radius: var(--radius-full);">
+          <div id="enroll-progress-bar" style="height: 6px; width: 0%; background: linear-gradient(90deg, #3b82f6, #10b981); border-radius: var(--radius-full); transition: width 0.3s ease;"></div>
         </div>
       </div>
 
       <!-- Action Buttons -->
-      <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 16px;">
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border-subtle);">
         <button type="button" onclick="closeEnrollModal()" class="neo-btn">
           Cancel
         </button>
         <button type="submit" id="enroll-submit-btn" class="neo-btn neo-btn-primary">
-          <i data-feather="camera"></i> Capture & Enroll
+          <i data-feather="camera" style="width: 15px; height: 15px;"></i> Capture & Enroll
         </button>
       </div>
 
@@ -172,7 +217,7 @@
     document.getElementById('enroll-modal').style.display = 'flex';
     document.getElementById('enroll-progress-box').style.display = 'none';
     document.getElementById('enroll-submit-btn').disabled = false;
-    document.getElementById('enroll-submit-btn').innerHTML = '<i data-feather="camera"></i> Capture & Enroll';
+    document.getElementById('enroll-submit-btn').innerHTML = '<i data-feather="camera" style="width: 15px; height: 15px;"></i> Capture & Enroll';
     feather.replace();
 
     try {
@@ -204,6 +249,8 @@
     const name = document.getElementById('enroll-name').value.trim();
     const email = document.getElementById('enroll-email').value.trim() || null;
     const deptId = parseInt(document.getElementById('enroll-dept').value) || null;
+    const designation = document.getElementById('enroll-desig').value.trim() || "Staff";
+    const hourlyRate = parseFloat(document.getElementById('enroll-rate').value) || 25.0;
 
     btn.disabled = true;
     progressBox.style.display = 'block';
@@ -214,7 +261,7 @@
     const frames = [];
     const TOTAL_FRAMES = 5;
 
-    // Capture 5 frames at 300ms intervals
+    // Capture 5 frames at 350ms intervals
     for (let i = 1; i <= TOTAL_FRAMES; i++) {
       modalCtx.drawImage(modalVideo, 0, 0, modalCanvas.width, modalCanvas.height);
       const b64 = modalCanvas.toDataURL('image/jpeg', 0.85);
@@ -225,7 +272,7 @@
       await new Promise(r => setTimeout(r, 350));
     }
 
-    btn.innerHTML = '<i data-feather="loader" style="animation: spin 1s linear infinite;"></i> Processing Vectors...';
+    btn.innerHTML = '<i data-feather="loader" style="animation: spin 1s linear infinite; width: 15px; height: 15px;"></i> Processing Vectors...';
     feather.replace();
 
     try {
@@ -237,6 +284,9 @@
           full_name: name,
           email: email,
           department_id: deptId,
+          designation: designation,
+          hourly_rate: hourlyRate,
+          role: "USER",
           frames: frames
         })
       });
@@ -252,14 +302,14 @@
     } catch (err) {
       showToast(err.message, 'danger');
       btn.disabled = false;
-      btn.innerHTML = '<i data-feather="camera"></i> Retry Capture';
+      btn.innerHTML = '<i data-feather="camera" style="width: 15px; height: 15px;"></i> Retry Capture';
       feather.replace();
     }
   }
 
   // Delete User
   async function deleteUser(userId, userName) {
-    if (!confirm(`Are you sure you want to delete "${userName}" and all their biometric embeddings? This action cannot be undone.`)) {
+    if (!confirm(`Are you sure you want to delete "${userName}" and all associated biometric embeddings? This action is permanent.`)) {
       return;
     }
 
@@ -278,7 +328,4 @@
     }
   }
 </script>
-<style>
-@keyframes spin { 100% { transform: rotate(360deg); } }
-</style>
 {% endblock %}

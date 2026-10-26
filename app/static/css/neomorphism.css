@@ -1,43 +1,69 @@
 /* ==========================================================================
-   NEOMORPHISM (SOFT UI) DESIGN SYSTEM FOR FRAS ENTERPRISE
+   FRAS ENTERPRISE — MINIMALIST SCANNING KIOSK & ROLE-BASED DASHBOARD CSS
+   Clean, high-performance aesthetic: Dark Slate, Glassmorphism, Laser HUD
    ========================================================================== */
 
 :root {
-  --bg-main: #e8ecf2;
-  --bg-surface: #e8ecf2;
-  --text-main: #2d3748;
-  --text-muted: #718096;
-  --text-light: #a0aec0;
+  /* Color Palette */
+  --bg-canvas: #090d16;
+  --bg-surface: #0f172a;
+  --bg-card: rgba(22, 30, 49, 0.75);
+  --bg-card-hover: rgba(30, 41, 69, 0.85);
+  --bg-elevated: #1e293b;
+  --bg-input: #131b2e;
   
-  /* Neomorphic Shadows */
-  --shadow-light: #ffffff;
-  --shadow-dark: #c4c9d4;
-  
-  --neo-flat: 8px 8px 18px var(--shadow-dark), -8px -8px 18px var(--shadow-light);
-  --neo-flat-sm: 4px 4px 10px var(--shadow-dark), -4px -4px 10px var(--shadow-light);
-  --neo-flat-lg: 14px 14px 28px var(--shadow-dark), -14px -14px 28px var(--shadow-light);
-  --neo-inset: inset 4px 4px 8px var(--shadow-dark), inset -4px -4px 8px var(--shadow-light);
-  --neo-inset-sm: inset 2px 2px 5px var(--shadow-dark), inset -2px -2px 5px var(--shadow-light);
-  
-  /* Accent Colors */
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-card: rgba(255, 255, 255, 0.12);
+  --border-focus: #3b82f6;
+
+  /* Typography Colors */
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-sub: #64748b;
+  --text-inverse: #0f172a;
+
+  /* Accents */
   --primary: #3b82f6;
   --primary-hover: #2563eb;
+  --primary-glow: rgba(59, 130, 246, 0.35);
+  --primary-subtle: rgba(59, 130, 246, 0.12);
+
+  --accent: #6366f1;
+  --accent-glow: rgba(99, 102, 241, 0.35);
+  
   --success: #10b981;
+  --success-glow: rgba(16, 185, 129, 0.35);
+  --success-subtle: rgba(16, 185, 129, 0.12);
+
   --warning: #f59e0b;
-  --danger: #ef4444;
+  --warning-glow: rgba(245, 158, 11, 0.35);
+  --warning-subtle: rgba(245, 158, 11, 0.12);
+
+  --danger: #f43f5e;
+  --danger-glow: rgba(244, 63, 94, 0.35);
+  --danger-subtle: rgba(244, 63, 94, 0.12);
+
   --info: #06b6d4;
-  
+  --info-subtle: rgba(6, 182, 212, 0.12);
+
+  /* Radius & Shadows */
+  --radius-xs: 6px;
   --radius-sm: 10px;
-  --radius-md: 18px;
-  --radius-lg: 24px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
   --radius-full: 9999px;
-  
-  --transition-fast: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-card: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  --shadow-glow: 0 0 25px var(--primary-glow);
+
+  --transition-fast: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-smooth: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Base Styling */
-* {
+/* Base Reset */
+*, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -45,7 +71,10 @@
 }
 
 body {
-  background-color: var(--bg-main);
+  background-color: var(--bg-canvas);
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.08) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(99, 102, 241, 0.06) 0px, transparent 50%);
   color: var(--text-main);
   min-height: 100vh;
   display: flex;
@@ -54,37 +83,67 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Neomorphic Containers & Cards */
-.neo-card {
-  background: var(--bg-surface);
-  border-radius: var(--radius-md);
-  box-shadow: var(--neo-flat);
-  padding: 24px;
+/* ==========================================================================
+   NAVIGATION BAR
+   ========================================================================== */
+.neo-nav {
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 14px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 50;
   transition: var(--transition-smooth);
 }
 
-.neo-card-inset {
-  background: var(--bg-surface);
-  border-radius: var(--radius-md);
-  box-shadow: var(--neo-inset);
-  padding: 20px;
-}
-
-.neo-card:hover {
-  box-shadow: var(--neo-flat-lg);
-}
-
-/* Neomorphic Buttons */
-.neo-btn {
-  background: var(--bg-surface);
+.neo-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 1.15rem;
+  font-weight: 800;
   color: var(--text-main);
-  border: none;
+  text-decoration: none;
+  letter-spacing: -0.02em;
+}
+
+.neo-logo-icon {
+  width: 38px;
+  height: 38px;
   border-radius: var(--radius-sm);
-  padding: 12px 24px;
-  font-size: 0.95rem;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  box-shadow: 0 4px 14px var(--primary-glow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+}
+
+/* Nav Links & Controls */
+.nav-link-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ==========================================================================
+   BUTTONS (Minimalist & High-Tech)
+   ========================================================================== */
+.neo-btn {
+  background: var(--bg-elevated);
+  color: var(--text-main);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 9px 18px;
+  font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: var(--neo-flat-sm);
+  box-shadow: var(--shadow-sm);
   transition: var(--transition-fast);
   display: inline-flex;
   align-items: center;
@@ -95,117 +154,224 @@ body {
 }
 
 .neo-btn:hover {
-  color: var(--primary);
+  background: rgba(45, 59, 87, 0.9);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
   transform: translateY(-1px);
-  box-shadow: 6px 6px 14px var(--shadow-dark), -6px -6px 14px var(--shadow-light);
 }
 
 .neo-btn:active, .neo-btn.active {
-  transform: translateY(1px);
-  box-shadow: var(--neo-inset-sm);
+  background: var(--primary-subtle);
+  border-color: var(--primary);
   color: var(--primary);
 }
 
-/* Primary Brand Button */
 .neo-btn-primary {
   background: linear-gradient(135deg, #3b82f6, #2563eb);
   color: #ffffff !important;
-  box-shadow: 4px 4px 12px rgba(37, 99, 235, 0.35), -4px -4px 12px var(--shadow-light);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 14px var(--primary-glow);
 }
 
 .neo-btn-primary:hover {
   background: linear-gradient(135deg, #2563eb, #1d4ed8);
-  box-shadow: 6px 6px 16px rgba(37, 99, 235, 0.45), -4px -4px 12px var(--shadow-light);
+  box-shadow: 0 6px 18px var(--primary-glow);
+  transform: translateY(-1px);
 }
 
-.neo-btn-primary:active {
-  box-shadow: inset 3px 3px 6px rgba(0, 0, 0, 0.3);
-}
-
-/* Success Button */
 .neo-btn-success {
   background: linear-gradient(135deg, #10b981, #059669);
   color: #ffffff !important;
-  box-shadow: 4px 4px 12px rgba(16, 185, 129, 0.35), -4px -4px 12px var(--shadow-light);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 14px var(--success-glow);
 }
 
-/* Danger Button */
+.neo-btn-success:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+  box-shadow: 0 6px 18px var(--success-glow);
+  transform: translateY(-1px);
+}
+
 .neo-btn-danger {
-  background: linear-gradient(135deg, #ef4444, #dc2626);
+  background: linear-gradient(135deg, #f43f5e, #e11d48);
   color: #ffffff !important;
-  box-shadow: 4px 4px 12px rgba(239, 68, 68, 0.35), -4px -4px 12px var(--shadow-light);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 14px var(--danger-glow);
 }
 
-/* Inputs & Form Controls */
+.neo-btn-danger:hover {
+  background: linear-gradient(135deg, #e11d48, #be123c);
+  box-shadow: 0 6px 18px var(--danger-glow);
+  transform: translateY(-1px);
+}
+
+.neo-btn-outline {
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+}
+
+.neo-btn-outline:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-subtle);
+}
+
+/* ==========================================================================
+   CARDS & CONTAINERS
+   ========================================================================== */
+.neo-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  padding: 24px;
+  transition: var(--transition-smooth);
+}
+
+.neo-card:hover {
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.neo-card-inset {
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 16px 20px;
+}
+
+/* ==========================================================================
+   BADGES & PILLS
+   ========================================================================== */
+.neo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: var(--radius-full);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: 1px solid transparent;
+}
+
+.neo-badge-success {
+  color: #34d399;
+  background: var(--success-subtle);
+  border-color: rgba(52, 211, 153, 0.25);
+}
+
+.neo-badge-warning {
+  color: #fbbf24;
+  background: var(--warning-subtle);
+  border-color: rgba(251, 191, 36, 0.25);
+}
+
+.neo-badge-danger {
+  color: #fb7185;
+  background: var(--danger-subtle);
+  border-color: rgba(251, 113, 133, 0.25);
+}
+
+.neo-badge-info {
+  color: #38bdf8;
+  background: var(--info-subtle);
+  border-color: rgba(56, 189, 248, 0.25);
+}
+
+.role-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  border-radius: var(--radius-full);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.role-super {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(168, 85, 247, 0.15));
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #fca5a5;
+}
+
+.role-admin {
+  background: var(--primary-subtle);
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  color: #93c5fd;
+}
+
+.role-hr {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #6ee7b7;
+}
+
+.role-user {
+  background: rgba(148, 163, 184, 0.12);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  color: #cbd5e1;
+}
+
+/* ==========================================================================
+   INPUTS & FORMS
+   ========================================================================== */
 .neo-input, .neo-select {
   width: 100%;
-  background: var(--bg-surface);
-  border: 1px solid transparent;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
-  padding: 12px 18px;
-  font-size: 0.95rem;
+  padding: 10px 16px;
+  font-size: 0.9rem;
   color: var(--text-main);
-  box-shadow: var(--neo-inset-sm);
   outline: none;
   transition: var(--transition-fast);
 }
 
 .neo-input:focus, .neo-select:focus {
-  border-color: rgba(59, 130, 246, 0.4);
-  box-shadow: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light), 0 0 0 3px rgba(59, 130, 246, 0.15);
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--primary-subtle);
+  background: rgba(22, 32, 54, 0.9);
 }
 
-/* Badges & Status Indicators */
-.neo-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  border-radius: var(--radius-full);
-  box-shadow: var(--neo-inset-sm);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+.neo-select option {
+  background: var(--bg-surface);
+  color: var(--text-main);
 }
 
-.neo-badge-success {
-  color: var(--success);
-  background: rgba(16, 185, 129, 0.08);
+/* ==========================================================================
+   LIVE-SCANNING KIOSK VIEWFINDER & HUD
+   ========================================================================== */
+.kiosk-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
-.neo-badge-warning {
-  color: var(--warning);
-  background: rgba(245, 158, 11, 0.08);
-}
-
-.neo-badge-danger {
-  color: var(--danger);
-  background: rgba(239, 68, 68, 0.08);
-}
-
-.neo-badge-info {
-  color: var(--info);
-  background: rgba(6, 182, 212, 0.08);
-}
-
-/* Kiosk Camera Viewfinder */
 .neo-viewfinder {
   position: relative;
   border-radius: var(--radius-lg);
-  box-shadow: var(--neo-inset);
+  border: 1px solid var(--border-card);
   overflow: hidden;
-  background: #0d1117;
+  background: #050811;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
 }
 
 .neo-viewfinder video {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transform: scaleX(-1); /* Mirror view */
+  transform: scaleX(-1);
 }
 
 .neo-viewfinder canvas {
@@ -218,61 +384,107 @@ body {
   transform: scaleX(-1);
 }
 
-/* Live Reticle & Pulsing Ring */
+/* Precision Corner Reticles */
 .reticle-corner {
   position: absolute;
-  width: 40px;
-  height: 40px;
-  border-color: var(--primary);
+  width: 32px;
+  height: 32px;
   pointer-events: none;
   transition: border-color 0.3s ease;
+  z-index: 10;
 }
 
-.reticle-top-left { top: 20px; left: 20px; border-top: 4px solid; border-left: 4px solid; border-radius: 8px 0 0 0; }
-.reticle-top-right { top: 20px; right: 20px; border-top: 4px solid; border-right: 4px solid; border-radius: 0 8px 0 0; }
-.reticle-bottom-left { bottom: 20px; left: 20px; border-bottom: 4px solid; border-left: 4px solid; border-radius: 0 0 0 8px; }
-.reticle-bottom-right { bottom: 20px; right: 20px; border-bottom: 4px solid; border-right: 4px solid; border-radius: 0 0 8px 0; }
+.reticle-top-left { 
+  top: 24px; left: 24px; 
+  border-top: 3px solid var(--primary); 
+  border-left: 3px solid var(--primary); 
+  border-radius: 6px 0 0 0; 
+}
+.reticle-top-right { 
+  top: 24px; right: 24px; 
+  border-top: 3px solid var(--primary); 
+  border-right: 3px solid var(--primary); 
+  border-radius: 0 6px 0 0; 
+}
+.reticle-bottom-left { 
+  bottom: 24px; left: 24px; 
+  border-bottom: 3px solid var(--primary); 
+  border-left: 3px solid var(--primary); 
+  border-radius: 0 0 0 6px; 
+}
+.reticle-bottom-right { 
+  bottom: 24px; right: 24px; 
+  border-bottom: 3px solid var(--primary); 
+  border-right: 3px solid var(--primary); 
+  border-radius: 0 0 6px 0; 
+}
 
-/* Navigation Bar */
-.neo-nav {
-  background: var(--bg-surface);
-  box-shadow: 0 8px 20px rgba(196, 201, 212, 0.45);
-  padding: 16px 32px;
+/* High-Tech Animated Laser Scan Line */
+.scan-laser-line {
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--primary), var(--info), transparent);
+  box-shadow: 0 0 15px var(--primary), 0 0 25px var(--info);
+  opacity: 0.85;
+  pointer-events: none;
+  z-index: 8;
+  animation: scanLaser 3s ease-in-out infinite alternate;
+}
+
+@keyframes scanLaser {
+  0% { top: 15%; opacity: 0.3; }
+  50% { opacity: 0.95; }
+  100% { top: 85%; opacity: 0.3; }
+}
+
+/* Floating Scanning Status Pill */
+.scan-status-hud {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-card);
+  padding: 6px 18px;
+  border-radius: var(--radius-full);
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  z-index: 50;
+  gap: 10px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #ffffff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  z-index: 15;
 }
 
-.neo-logo {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 1.25rem;
-  font-weight: 800;
-  color: var(--text-main);
-  text-decoration: none;
-  letter-spacing: -0.02em;
+/* Pulsing radar point */
+.radar-pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  animation: radarPulse 1.8s infinite;
 }
 
-.neo-logo-icon {
-  width: 42px;
-  height: 42px;
-  border-radius: var(--radius-sm);
-  background: var(--bg-surface);
-  box-shadow: var(--neo-flat-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--primary);
+@keyframes radarPulse {
+  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
 }
 
-/* Tables */
+/* ==========================================================================
+   TABLES
+   ========================================================================== */
 .neo-table-wrapper {
   border-radius: var(--radius-md);
-  box-shadow: var(--neo-inset-sm);
+  border: 1px solid var(--border-subtle);
   overflow: hidden;
-  background: var(--bg-surface);
+  background: rgba(15, 23, 42, 0.6);
 }
 
 .neo-table {
@@ -282,33 +494,89 @@ body {
 }
 
 .neo-table th {
-  background: rgba(0, 0, 0, 0.02);
-  padding: 16px 20px;
-  font-size: 0.85rem;
+  background: rgba(30, 41, 59, 0.5);
+  padding: 12px 18px;
+  font-size: 0.75rem;
   font-weight: 700;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  border-bottom: 2px solid rgba(196, 201, 212, 0.3);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .neo-table td {
-  padding: 16px 20px;
-  font-size: 0.95rem;
-  border-bottom: 1px solid rgba(196, 201, 212, 0.2);
+  padding: 14px 18px;
+  font-size: 0.9rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
   color: var(--text-main);
 }
 
 .neo-table tr:hover td {
-  background: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.03);
 }
 
-/* Modals */
+/* ==========================================================================
+   METRIC STAT CARDS
+   ========================================================================== */
+.stat-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.stat-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-md);
+  padding: 20px 22px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  transition: var(--transition-smooth);
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+}
+
+.stat-icon-box {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.stat-value {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--text-main);
+  line-height: 1.1;
+  margin-top: 4px;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ==========================================================================
+   MODALS & TOASTS
+   ========================================================================== */
 .neo-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(6px);
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -317,33 +585,56 @@ body {
 }
 
 .neo-modal {
-  background: var(--bg-surface);
+  background: #0f172a;
+  border: 1px solid var(--border-card);
   border-radius: var(--radius-lg);
-  box-shadow: var(--neo-flat-lg);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.85);
   width: 100%;
-  max-width: 600px;
-  padding: 32px;
+  max-width: 620px;
+  padding: 28px;
   max-height: 90vh;
   overflow-y: auto;
 }
 
-/* Toast Notifications */
 .neo-toast {
   position: fixed;
   bottom: 24px;
   right: 24px;
-  background: var(--bg-surface);
-  padding: 16px 24px;
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border-card);
+  padding: 14px 20px;
   border-radius: var(--radius-md);
-  box-shadow: var(--neo-flat-lg);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
   display: flex;
   align-items: center;
   gap: 12px;
   z-index: 200;
-  animation: slideInUp 0.3s ease;
+  animation: toastSlide 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@keyframes slideInUp {
-  from { transform: translateY(100%); opacity: 0; }
+@keyframes toastSlide {
+  from { transform: translateY(30px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
+}
+
+/* Animations */
+@keyframes spin { 
+  100% { transform: rotate(360deg); } 
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-full);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
 }

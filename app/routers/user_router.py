@@ -141,7 +141,9 @@ def enroll_user(
         full_name=enroll_data.full_name.strip(),
         email=enroll_data.email.strip() if enroll_data.email else None,
         department_id=enroll_data.department_id,
-        role="USER",
+        role=enroll_data.role or "USER",
+        designation=enroll_data.designation or "Staff",
+        hourly_rate=enroll_data.hourly_rate if enroll_data.hourly_rate is not None else 25.0,
         is_active=True,
     )
     db.add(user)

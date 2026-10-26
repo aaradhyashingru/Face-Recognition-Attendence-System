@@ -112,6 +112,19 @@ class TestFRASEnterprise(unittest.TestCase):
         self.assertGreater(len(pdf_buf.getvalue()), 1000)
         print("[OK] Excel and PDF export services passed.")
 
+    def test_05_payroll_service(self):
+        from app.services.payroll_service import PayrollService
+        payroll_data = PayrollService.compute_payroll(self.db)
+        self.assertIn("summary", payroll_data)
+        self.assertIn("records", payroll_data)
+        self.assertGreaterEqual(payroll_data["summary"]["total_employees"], 1)
+
+        csv_buf = PayrollService.export_payroll_csv(payroll_data)
+        self.assertIsInstance(csv_buf, io.BytesIO)
+        self.assertGreater(len(csv_buf.getvalue()), 50)
+        print("[OK] Payroll computation and CSV export passed.")
+
 
 if __name__ == "__main__":
     unittest.main()
+

@@ -9,9 +9,12 @@ from app.auth import get_token_from_request, decode_token
 from app.config import TEMPLATES_DIR
 from app.database import get_db
 from app.models import AttendanceLog, User, Department
+from app.services.payroll_service import PayrollService
 
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 router = APIRouter(tags=["Web Pages"])
+
+ADMIN_ROLES = ["ADMIN", "SUPER_ADMIN", "HR_MANAGER"]
 
 
 def optional_current_user(request: Request, db: Session) -> User | None:
@@ -36,7 +39,7 @@ def root():
 
 @router.get("/kiosk", response_class=HTMLResponse)
 def kiosk_page(request: Request, db: Session = Depends(get_db)):
-    """Fullscreen Touchless Neomorphic Attendance Terminal."""
+    """Minimalist live-scanning touchless attendance kiosk."""
     user = optional_current_user(request, db)
     return templates.TemplateResponse(
         request=request,
@@ -50,21 +53,21 @@ def kiosk_page(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/login", response_class=HTMLResponse)
 def login_page(request: Request, db: Session = Depends(get_db)):
-    """Neomorphic Login Interface."""
+    """Role-based Portal Sign-In."""
     user = optional_current_user(request, db)
-    if user and user.role == "ADMIN":
+    if user and user.role in ADMIN_ROLES:
         return RedirectResponse(url="/admin", status_code=status.HTTP_302_FOUND)
     return templates.TemplateResponse(request=request, name="login.html", context={})
 
 
 @router.get("/admin", response_class=HTMLResponse)
 def admin_dashboard(request: Request, db: Session = Depends(get_db)):
-    """Admin Analytics & KPI Dashboard."""
+    """Role-Based Admin Dashboard with tracking and payroll metrics."""
     user = optional_current_user(request, db)
-    if not user or user.role != "ADMIN":
+    if not user or user.role not in ADMIN_ROLES:
         return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
 
-    # Compute Live Metrics
+    # Compute Live Attendance Tracking Metrics
     today_start = datetime.combine(date.today(), time.min)
     total_users = db.query(User).filter(User.is_active == True).count()
     
@@ -94,6 +97,11 @@ def admin_dashboard(request: Request, db: Session = Depends(get_db)):
         .all()
     )
 
+    # Payroll Quick Overview for Current Month
+    payroll_summary = PayrollService.compute_payroll(db)
+
+    departments = db.query(Department).all()
+
     return templates.TemplateResponse(
         request=request,
         name="admin_dashboard.html",
@@ -104,6 +112,9 @@ def admin_dashboard(request: Request, db: Session = Depends(get_db)):
             "late_count": late_count,
             "attendance_rate": attendance_rate,
             "recent_punches": recent_punches,
+            "payroll_summary": payroll_summary["summary"],
+            "payroll_records": payroll_summary["records"][:5],  # top 5 preview
+            "departments": departments,
             "today_date": datetime.now().strftime("%A, %d %B %Y"),
         },
     )
@@ -113,7 +124,7 @@ def admin_dashboard(request: Request, db: Session = Depends(get_db)):
 def admin_users_page(request: Request, db: Session = Depends(get_db)):
     """User Management & Face Enrollment Page."""
     user = optional_current_user(request, db)
-    if not user or user.role != "ADMIN":
+    if not user or user.role not in ADMIN_ROLES:
         return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
 
     users = db.query(User).filter(User.is_active == True).order_by(User.id.desc()).all()
@@ -133,9 +144,9 @@ def admin_users_page(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/admin/reports", response_class=HTMLResponse)
 def admin_reports_page(request: Request, db: Session = Depends(get_db)):
-    """Attendance Reporting & Export Page."""
+    """Attendance Tracking & Audit Logs."""
     user = optional_current_user(request, db)
-    if not user or user.role != "ADMIN":
+    if not user or user.role not in ADMIN_ROLES:
         return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
 
     departments = db.query(Department).all()
@@ -151,3 +162,31 @@ def admin_reports_page(request: Request, db: Session = Depends(get_db)):
             "today_date": datetime.now().strftime("%A, %d %B %Y"),
         },
     )
+
+
+@router.get("/admin/payroll", response_class=HTMLResponse)
+def admin_payroll_page(request: Request, db: Session = Depends(get_db)):
+    """Dedicated Workforce Payroll & Work Hours Management Dashboard."""
+    user = optional_current_user(request, db)
+    if not user or user.role not in ADMIN_ROLES:
+        return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
+
+    departments = db.query(Department).all()
+    today_str = date.today().strftime("%Y-%m-%d")
+    month_start_str = date(date.today().year, date.today().month, 1).strftime("%Y-%m-%d")
+
+    payroll_data = PayrollService.compute_payroll(db, start_date=month_start_str, end_date=today_str)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="admin_payroll.html",
+        context={
+            "current_user": user,
+            "departments": departments,
+            "payroll_data": payroll_data,
+            "month_start_str": month_start_str,
+            "today_str": today_str,
+            "today_date": datetime.now().strftime("%A, %d %B %Y"),
+        },
+    )
+

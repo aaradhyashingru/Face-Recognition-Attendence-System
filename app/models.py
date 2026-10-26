@@ -35,7 +35,9 @@ class User(Base):
     full_name = Column(String(150), nullable=False, index=True)
     email = Column(String(150), unique=True, nullable=True)
     department_id = Column(Integer, ForeignKey("departments.id"), nullable=True)
-    role = Column(String(20), default="USER", nullable=False)  # "ADMIN", "USER"
+    role = Column(String(20), default="USER", nullable=False)  # "ADMIN", "SUPER_ADMIN", "HR_MANAGER", "USER"
+    designation = Column(String(100), default="Staff", nullable=True)
+    hourly_rate = Column(Float, default=25.0, nullable=True)
     password_hash = Column(String(255), nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)

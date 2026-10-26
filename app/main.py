@@ -17,6 +17,19 @@ async def lifespan(app: FastAPI):
     print("Initializing Database tables...")
     Base.metadata.create_all(bind=engine)
 
+    # Ensure schema migrations for columns if running on existing database
+    from sqlalchemy import text
+    with engine.connect() as conn:
+        for col_sql in [
+            "ALTER TABLE users ADD COLUMN hourly_rate FLOAT DEFAULT 25.0",
+            "ALTER TABLE users ADD COLUMN designation VARCHAR(100) DEFAULT 'Staff'",
+        ]:
+            try:
+                conn.execute(text(col_sql))
+                conn.commit()
+            except Exception:
+                pass
+
     # Seed Default Department & Admin
     db = SessionLocal()
     try:
