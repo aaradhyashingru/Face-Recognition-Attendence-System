@@ -73,17 +73,15 @@ def admin_dashboard(request: Request, db: Session = Depends(get_db)):
     
     # Unique users who punched today
     present_today = (
-        db.query(AttendanceLog.user_id)
+        db.query(func.count(func.distinct(AttendanceLog.user_id)))
         .filter(AttendanceLog.timestamp >= today_start)
-        .distinct()
-        .count()
+        .scalar() or 0
     )
 
     late_count = (
-        db.query(AttendanceLog.user_id)
+        db.query(func.count(func.distinct(AttendanceLog.user_id)))
         .filter(AttendanceLog.timestamp >= today_start, AttendanceLog.status == "LATE")
-        .distinct()
-        .count()
+        .scalar() or 0
     )
 
     attendance_rate = round((present_today / total_users * 100) if total_users > 0 else 0.0, 1)

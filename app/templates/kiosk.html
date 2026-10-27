@@ -333,10 +333,15 @@
       const label = data.full_name ? `${data.full_name} (${Math.round(data.confidence * 100)}%)` : (data.status === 'SPOOF_DETECTED' ? 'SPOOF ALERT' : 'UNKNOWN');
       ctx.fillRect(bx * scaleX, (by * scaleY) - 28, Math.max(bw * scaleX, 160), 28);
 
-      // Label text
+      // Label text (un-mirrored so glyphs read left-to-right despite CSS scaleX(-1))
+      ctx.save();
+      ctx.scale(-1, 1);
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 14px Inter, sans-serif';
-      ctx.fillText(label, (bx * scaleX) + 8, (by * scaleY) - 8);
+      ctx.font = 'bold 13px Inter, sans-serif';
+      const boxW = Math.max(bw * scaleX, 160);
+      const textX = -((bx * scaleX) + boxW - 10);
+      ctx.fillText(label, textX, (by * scaleY) - 9);
+      ctx.restore();
       ctx.restore();
     }
 
@@ -446,9 +451,16 @@
     }
 
     tbody.innerHTML = logs.map(l => {
-      const statusBadge = l.status === 'ON_TIME' 
-        ? '<span class="neo-badge neo-badge-success">ON TIME</span>' 
-        : '<span class="neo-badge neo-badge-warning">LATE</span>';
+      let statusBadge = '<span class="neo-badge neo-badge-success">ON TIME</span>';
+      if (l.status === 'LATE') {
+        statusBadge = '<span class="neo-badge neo-badge-danger">LATE</span>';
+      } else if (l.status === 'HALF_DAY') {
+        statusBadge = '<span class="neo-badge neo-badge-warning" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24;">HALF DAY</span>';
+      } else if (l.status === 'EXCUSED') {
+        statusBadge = '<span class="neo-badge neo-badge-info" style="background: rgba(147, 197, 253, 0.2); color: #93c5fd;">EXCUSED</span>';
+      } else if (l.status === 'OVERTIME') {
+        statusBadge = '<span class="neo-badge neo-badge-success" style="background: rgba(16, 185, 129, 0.2); color: #34d399;">OVERTIME</span>';
+      }
       const typeBadge = l.punch_type === 'IN' 
         ? '<span class="neo-badge neo-badge-info">CHECK-IN</span>' 
         : '<span class="neo-badge neo-badge-warning">CHECK-OUT</span>';

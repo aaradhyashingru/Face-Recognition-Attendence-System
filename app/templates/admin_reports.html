@@ -147,9 +147,17 @@
         const typeBadge = l.punch_type === 'IN' 
           ? '<span class="neo-badge neo-badge-info" style="font-size: 0.68rem;">CHECK-IN</span>' 
           : '<span class="neo-badge neo-badge-warning" style="font-size: 0.68rem;">CHECK-OUT</span>';
-        const statusBadge = l.status === 'ON_TIME' 
-          ? '<span class="neo-badge neo-badge-success" style="font-size: 0.68rem;">ON TIME</span>' 
-          : '<span class="neo-badge neo-badge-warning" style="font-size: 0.68rem;">LATE</span>';
+
+        let statusBadge = '<span class="neo-badge neo-badge-success" style="font-size: 0.68rem;">ON TIME</span>';
+        if (l.status === 'LATE') {
+          statusBadge = '<span class="neo-badge neo-badge-danger" style="font-size: 0.68rem;">LATE</span>';
+        } else if (l.status === 'HALF_DAY') {
+          statusBadge = '<span class="neo-badge neo-badge-warning" style="font-size: 0.68rem; background: rgba(245, 158, 11, 0.2); color: #fbbf24;">HALF DAY</span>';
+        } else if (l.status === 'EXCUSED') {
+          statusBadge = '<span class="neo-badge neo-badge-info" style="font-size: 0.68rem; background: rgba(147, 197, 253, 0.2); color: #93c5fd;">EXCUSED</span>';
+        } else if (l.status === 'OVERTIME') {
+          statusBadge = '<span class="neo-badge neo-badge-success" style="font-size: 0.68rem; background: rgba(16, 185, 129, 0.2); color: #34d399;">OVERTIME</span>';
+        }
 
         return `
           <tr>
@@ -173,11 +181,13 @@
     const start = document.getElementById('filter-start').value;
     const end = document.getElementById('filter-end').value;
     const dept = document.getElementById('filter-dept').value;
+    const query = document.getElementById('filter-query').value.trim();
 
     const params = new URLSearchParams();
     if (start) params.append('start_date', start);
     if (end) params.append('end_date', end);
     if (dept) params.append('department_id', dept);
+    if (query) params.append('query', query);
 
     const endpoint = type === 'excel' ? '/api/v1/attendance/export/excel' : '/api/v1/attendance/export/pdf';
     window.location.href = `${endpoint}?${params.toString()}`;

@@ -134,7 +134,8 @@ def recognize_and_punch(
     att_status = log.status if log else "ON_TIME"
 
     if result_status.startswith("COOLDOWN"):
-        remaining_secs = result_status.split("_")[1]
+        parts = result_status.split("_")
+        remaining_secs = parts[1] if len(parts) > 1 else ""
         return FaceRecognizeResponse(
             status="COOLDOWN",
             user_code=user.user_code,
@@ -145,7 +146,7 @@ def recognize_and_punch(
             attendance_status=att_status,
             confidence=confidence,
             bbox=bbox,
-            message=f"Attendance already marked for {user.full_name}. Cooldown active ({remaining_secs}).",
+            message=f"Attendance already marked for {user.full_name}. Cooldown active ({remaining_secs})." if remaining_secs else f"Attendance already marked for {user.full_name}. Cooldown active.",
         )
 
     return FaceRecognizeResponse(
@@ -248,6 +249,7 @@ def export_excel(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
     department_id: Optional[int] = None,
+    query: Optional[str] = None,
     db: Session = Depends(get_db),
 ):
     """Stream formatted Excel (.xlsx) file download."""
@@ -266,6 +268,9 @@ def export_excel(
             pass
     if department_id:
         q = q.filter(User.department_id == department_id)
+    if query:
+        search_filter = f"%{query}%"
+        q = q.filter((User.full_name.ilike(search_filter)) | (User.user_code.ilike(search_filter)))
 
     logs = q.order_by(AttendanceLog.timestamp.asc()).all()
     stream = ExportService.generate_excel(logs)
@@ -283,6 +288,7 @@ def export_pdf(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
     department_id: Optional[int] = None,
+    query: Optional[str] = None,
     db: Session = Depends(get_db),
 ):
     """Stream formatted PDF audit report download."""
@@ -301,6 +307,9 @@ def export_pdf(
             pass
     if department_id:
         q = q.filter(User.department_id == department_id)
+    if query:
+        search_filter = f"%{query}%"
+        q = q.filter((User.full_name.ilike(search_filter)) | (User.user_code.ilike(search_filter)))
 
     logs = q.order_by(AttendanceLog.timestamp.asc()).all()
     stream = ExportService.generate_pdf(logs)

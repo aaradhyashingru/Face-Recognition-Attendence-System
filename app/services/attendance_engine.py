@@ -112,7 +112,10 @@ class AttendanceEngine:
         status = "ON_TIME"
         if punch_type == "IN":
             try:
-                sh_h, sh_m, sh_s = map(int, shift_start_str.split(":"))
+                parts = [int(p) for p in shift_start_str.strip().split(":")]
+                sh_h = parts[0]
+                sh_m = parts[1] if len(parts) > 1 else 0
+                sh_s = parts[2] if len(parts) > 2 else 0
                 shift_deadline = datetime.combine(
                     date.today(), time(sh_h, sh_m, sh_s)
                 ) + timedelta(minutes=grace_mins)

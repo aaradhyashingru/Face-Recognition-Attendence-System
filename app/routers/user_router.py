@@ -247,6 +247,9 @@ def update_user(
     db.commit()
     db.refresh(user)
 
+    # Invalidate biometric cache so active status or details take effect immediately
+    EmbeddingCache.invalidate()
+
     eff_grace = user.grace_period_mins if user.grace_period_mins is not None else (user.department.grace_period_mins if user.department else 15)
     has_bio = len(user.embeddings) > 0
     dept_name = user.department.name if user.department else "General"

@@ -68,28 +68,31 @@ class ExportService:
             cell.border = thin_border
 
         # Table Rows
-        for i, log in enumerate(logs, 1):
-            dept_name = log.user.department.name if log.user and log.user.department else "General"
-            row_data = [
-                i,
-                log.user.user_code if log.user else "N/A",
-                log.user.full_name if log.user else "N/A",
-                dept_name,
-                log.timestamp.strftime("%Y-%m-%d"),
-                log.timestamp.strftime("%I:%M:%S %p"),
-                log.punch_type,
-                log.status,
-            ]
-            ws.append(row_data)
-            row_idx = ws.max_row
+        if not logs:
+            ws.append(["-", "No records found", "-", "-", "-", "-", "-", "-"])
+        else:
+            for i, log in enumerate(logs, 1):
+                dept_name = log.user.department.name if log.user and log.user.department else "General"
+                row_data = [
+                    i,
+                    log.user.user_code if log.user else "N/A",
+                    log.user.full_name if log.user else "N/A",
+                    dept_name,
+                    log.timestamp.strftime("%Y-%m-%d"),
+                    log.timestamp.strftime("%I:%M:%S %p"),
+                    log.punch_type,
+                    log.status,
+                ]
+                ws.append(row_data)
+                row_idx = ws.max_row
 
-            # Apply row formatting
-            for col_num in range(1, len(row_data) + 1):
-                cell = ws.cell(row=row_idx, column=col_num)
-                cell.border = thin_border
-                cell.alignment = center_align if col_num in [1, 2, 5, 6, 7, 8] else left_align
-                if i % 2 == 0:
-                    cell.fill = alt_fill
+                # Apply row formatting
+                for col_num in range(1, len(row_data) + 1):
+                    cell = ws.cell(row=row_idx, column=col_num)
+                    cell.border = thin_border
+                    cell.alignment = center_align if col_num in [1, 2, 5, 6, 7, 8] else left_align
+                    if i % 2 == 0:
+                        cell.fill = alt_fill
 
         # Auto-fit Column Widths
         for col_idx, col in enumerate(ws.columns, 1):
@@ -146,18 +149,21 @@ class ExportService:
             ["#", "User Code", "Full Name", "Department", "Date", "Time", "Type", "Status"]
         ]
 
-        for i, log in enumerate(logs, 1):
-            dept_name = log.user.department.name if log.user and log.user.department else "General"
-            table_data.append([
-                str(i),
-                log.user.user_code if log.user else "N/A",
-                log.user.full_name if log.user else "N/A",
-                dept_name,
-                log.timestamp.strftime("%Y-%m-%d"),
-                log.timestamp.strftime("%I:%M:%S %p"),
-                log.punch_type,
-                log.status,
-            ])
+        if not logs:
+            table_data.append(["-", "No attendance records found matching filters", "-", "-", "-", "-", "-", "-"])
+        else:
+            for i, log in enumerate(logs, 1):
+                dept_name = log.user.department.name if log.user and log.user.department else "General"
+                table_data.append([
+                    str(i),
+                    log.user.user_code if log.user else "N/A",
+                    log.user.full_name if log.user else "N/A",
+                    dept_name,
+                    log.timestamp.strftime("%Y-%m-%d"),
+                    log.timestamp.strftime("%I:%M:%S %p"),
+                    log.punch_type,
+                    log.status,
+                ])
 
         pdf_table = Table(table_data, repeatRows=1)
         pdf_table.setStyle(
