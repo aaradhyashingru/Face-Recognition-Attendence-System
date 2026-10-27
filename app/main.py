@@ -8,8 +8,20 @@ from app.auth import seed_default_admin
 from app.config import STATIC_DIR, CORS_ORIGINS, logger
 from app.database import engine, Base, SessionLocal
 from app.models import Department
-from app.routers import auth_router, user_router, attendance_router, web_router
+from app.routers import (
+    auth_router,
+    user_router,
+    attendance_router,
+    leave_router,
+    holiday_router,
+    shift_router,
+    regularization_router,
+    web_router,
+)
 from app.services.vision_engine import get_vision_engine
+from app.services.shift_service import ShiftService
+from app.services.leave_service import LeaveService
+from app.services.holiday_service import HolidayService
 
 
 @asynccontextmanager
@@ -25,36 +37,67 @@ async def lifespan(app: FastAPI):
     try:
         from sqlalchemy import text
         with engine.connect() as conn:
+            # Users table columns
             try:
                 res = conn.execute(text("PRAGMA table_info(users)"))
-                existing_cols = {row[1] for row in res.fetchall()}
+                existing_user_cols = {row[1] for row in res.fetchall()}
             except Exception:
-                existing_cols = set()
+                existing_user_cols = set()
 
-            col_defs = [
+            user_col_defs = [
                 ("hourly_rate", "ALTER TABLE users ADD COLUMN hourly_rate FLOAT DEFAULT 25.0"),
                 ("designation", "ALTER TABLE users ADD COLUMN designation VARCHAR(100) DEFAULT 'Staff'"),
                 ("grace_period_mins", "ALTER TABLE users ADD COLUMN grace_period_mins INTEGER DEFAULT NULL"),
+                ("shift_id", "ALTER TABLE users ADD COLUMN shift_id INTEGER DEFAULT NULL"),
             ]
-            for col_name, sql in col_defs:
-                if col_name not in existing_cols:
+            for col_name, sql in user_col_defs:
+                if col_name not in existing_user_cols:
                     try:
                         conn.execute(text(sql))
                         conn.commit()
-                        logger.info("Added missing database column: %s", col_name)
+                        logger.info("Added missing database column: users.%s", col_name)
                     except Exception as e:
-                        logger.warning("Could not add column %s: %s", col_name, e)
+                        logger.warning("Could not add column users.%s: %s", col_name, e)
                         try:
                             conn.rollback()
                         except Exception:
                             pass
+
+            # Departments table columns
+            try:
+                res_dept = conn.execute(text("PRAGMA table_info(departments)"))
+                existing_dept_cols = {row[1] for row in res_dept.fetchall()}
+            except Exception:
+                existing_dept_cols = set()
+
+            if "shift_id" not in existing_dept_cols:
+                try:
+                    conn.execute(text("ALTER TABLE departments ADD COLUMN shift_id INTEGER DEFAULT NULL"))
+                    conn.commit()
+                    logger.info("Added missing database column: departments.shift_id")
+                except Exception as e:
+                    logger.warning("Could not add column departments.shift_id: %s", e)
+                    try:
+                        conn.rollback()
+                    except Exception:
+                        pass
     except Exception as e:
         logger.warning("Column migration inspection warning: %s", e)
 
-    # 3. Seed Default Department & Admin
+    # 3. Seed Shifts, Leave Types, Corporate Holidays, Default Department & Admin
     try:
         db = SessionLocal()
         try:
+            # Shift System
+            ShiftService.seed_default_shifts(db)
+
+            # Leave Management
+            LeaveService.seed_default_leave_types(db)
+
+            # Statutory & Corporate Holidays
+            HolidayService.seed_default_holidays(db)
+
+            # Default Department
             if not db.query(Department).first():
                 default_dept = Department(
                     name="Computer Science & Engineering",
@@ -112,6 +155,10 @@ app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 app.include_router(auth_router.router)
 app.include_router(user_router.router)
 app.include_router(attendance_router.router)
+app.include_router(leave_router.router)
+app.include_router(holiday_router.router)
+app.include_router(shift_router.router)
+app.include_router(regularization_router.router)
 app.include_router(web_router.router)
 
 

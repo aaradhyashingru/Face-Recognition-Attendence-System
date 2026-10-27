@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.auth import get_current_admin
 from app.database import get_db
-from app.models import User, FaceEmbedding, Department, AuditLog
+from app.models import User, FaceEmbedding, Department, AuditLog, Shift
 from app.schemas import (
     UserOut,
     UserUpdate,
@@ -14,6 +14,7 @@ from app.schemas import (
     DepartmentCreate,
 )
 from app.services.vision_engine import get_vision_engine, EmbeddingCache
+from app.services.leave_service import LeaveService
 
 router = APIRouter(prefix="/api/v1", tags=["Users & Departments"])
 
@@ -67,6 +68,7 @@ def list_users(
         has_bio = len(u.embeddings) > 0
         dept_name = u.department.name if u.department else "General"
         eff_grace = u.grace_period_mins if u.grace_period_mins is not None else (u.department.grace_period_mins if u.department else 15)
+        shift_name = u.shift.name if u.shift else (u.department.shift.name if (u.department and u.department.shift) else None)
 
         results.append(
             UserOut(
@@ -75,6 +77,8 @@ def list_users(
                 full_name=u.full_name,
                 email=u.email,
                 department_id=u.department_id,
+                shift_id=u.shift_id,
+                shift_name=shift_name,
                 role=u.role,
                 designation=u.designation,
                 hourly_rate=u.hourly_rate,
@@ -145,6 +149,7 @@ def enroll_user(
             full_name=enroll_data.full_name.strip(),
             email=enroll_data.email.strip() if enroll_data.email else None,
             department_id=enroll_data.department_id,
+            shift_id=enroll_data.shift_id,
             role=enroll_data.role or "USER",
             designation=enroll_data.designation or "Staff",
             hourly_rate=enroll_data.hourly_rate if enroll_data.hourly_rate is not None else 25.0,
@@ -162,6 +167,8 @@ def enroll_user(
             user.email = enroll_data.email.strip()
         if enroll_data.department_id is not None:
             user.department_id = enroll_data.department_id
+        if enroll_data.shift_id is not None:
+            user.shift_id = enroll_data.shift_id
         if enroll_data.designation:
             user.designation = enroll_data.designation
         if enroll_data.hourly_rate is not None:
@@ -176,6 +183,13 @@ def enroll_user(
     )
     face_rec.set_vector(final_vector_list)
     db.add(face_rec)
+    db.commit()
+
+    # Ensure annual leave balances are provisioned for employee
+    try:
+        LeaveService.ensure_user_balances(db, user.id)
+    except Exception:
+        pass
 
     # Invalidate in-memory embedding cache immediately
     EmbeddingCache.invalidate()
@@ -222,6 +236,9 @@ def update_user(
     if update_data.department_id is not None:
         user.department_id = update_data.department_id
         changed_fields.append("department_id")
+    if "shift_id" in update_data.model_fields_set:
+        user.shift_id = update_data.shift_id
+        changed_fields.append("shift_id")
     if update_data.designation is not None:
         user.designation = update_data.designation.strip()
         changed_fields.append("designation")
@@ -253,6 +270,7 @@ def update_user(
     eff_grace = user.grace_period_mins if user.grace_period_mins is not None else (user.department.grace_period_mins if user.department else 15)
     has_bio = len(user.embeddings) > 0
     dept_name = user.department.name if user.department else "General"
+    shift_name = user.shift.name if user.shift else (user.department.shift.name if (user.department and user.department.shift) else None)
 
     return UserOut(
         id=user.id,
@@ -260,6 +278,8 @@ def update_user(
         full_name=user.full_name,
         email=user.email,
         department_id=user.department_id,
+        shift_id=user.shift_id,
+        shift_name=shift_name,
         role=user.role,
         designation=user.designation,
         hourly_rate=user.hourly_rate,

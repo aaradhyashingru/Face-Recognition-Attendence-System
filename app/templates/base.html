@@ -59,6 +59,15 @@
         <a href="/admin/payroll" class="neo-btn {% if request.url.path == '/admin/payroll' %}active{% endif %}">
           <i data-feather="dollar-sign" style="width: 15px; height: 15px;"></i> Payroll
         </a>
+        <a href="/admin/leaves" class="neo-btn {% if request.url.path == '/admin/leaves' %}active{% endif %}">
+          <i data-feather="calendar" style="width: 15px; height: 15px;"></i> Leaves
+        </a>
+        <a href="/admin/holidays" class="neo-btn {% if request.url.path == '/admin/holidays' %}active{% endif %}">
+          <i data-feather="sun" style="width: 15px; height: 15px;"></i> Holidays
+        </a>
+        <a href="/admin/shifts" class="neo-btn {% if request.url.path == '/admin/shifts' %}active{% endif %}">
+          <i data-feather="clock" style="width: 15px; height: 15px;"></i> Shifts
+        </a>
         <a href="/admin/users" class="neo-btn {% if request.url.path == '/admin/users' %}active{% endif %}">
           <i data-feather="users" style="width: 15px; height: 15px;"></i> Users
         </a>
@@ -72,9 +81,23 @@
             <i data-feather="log-out" style="width: 15px; height: 15px;"></i>
           </button>
         </div>
+      {% elif current_user %}
+        <a href="/portal" class="neo-btn {% if request.url.path == '/portal' %}active{% endif %}">
+          <i data-feather="user" style="width: 15px; height: 15px;"></i> My Portal
+        </a>
+
+        <!-- Employee Profile Badge -->
+        <div style="display: flex; align-items: center; gap: 8px; margin-left: 6px; padding-left: 10px; border-left: 1px solid var(--border-subtle);">
+          <span class="neo-badge neo-badge-info" style="display: flex; align-items: center; gap: 5px; padding: 4px 10px;">
+            <i data-feather="user-check" style="width: 12px; height: 12px;"></i> {{ current_user.full_name }} ({{ current_user.user_code }})
+          </span>
+          <button onclick="logoutAdmin()" class="neo-btn neo-btn-danger" style="padding: 7px 12px; border-radius: var(--radius-sm);" title="Sign Out">
+            <i data-feather="log-out" style="width: 15px; height: 15px;"></i>
+          </button>
+        </div>
       {% else %}
         <a href="/login" class="neo-btn neo-btn-primary">
-          <i data-feather="lock" style="width: 15px; height: 15px;"></i> Admin Sign In
+          <i data-feather="lock" style="width: 15px; height: 15px;"></i> Portal Sign In
         </a>
       {% endif %}
     </nav>

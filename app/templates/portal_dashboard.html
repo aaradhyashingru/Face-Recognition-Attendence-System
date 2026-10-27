@@ -1,0 +1,551 @@
+{% extends "base.html" %}
+
+{% block title %}My Portal — Employee Self-Service{% endblock %}
+
+{% block content %}
+<div style="max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px;">
+
+  <!-- Employee Welcome Banner -->
+  <div class="neo-card" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.9) 100%);">
+    <div style="display: flex; align-items: center; gap: 16px;">
+      <div style="width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, var(--primary) 0%, #8b5cf6 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.4rem; font-weight: 800; box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);">
+        {{ current_user.full_name[:1] }}
+      </div>
+      <div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <h1 style="font-family: 'Outfit', sans-serif; font-size: 1.55rem; font-weight: 800; color: #ffffff; letter-spacing: -0.01em;">
+            {{ current_user.full_name }}
+          </h1>
+          <span class="neo-badge neo-badge-info" style="font-size: 0.75rem;">
+            {{ current_user.user_code }}
+          </span>
+          <span class="role-badge role-admin" style="font-size: 0.7rem;">
+            {{ current_user.designation or 'Staff' }}
+          </span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 14px; font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; flex-wrap: wrap;">
+          <span><i data-feather="briefcase" style="width: 13px; height: 13px; vertical-align: middle;"></i> {{ current_user.department.name if current_user.department else 'General Department' }}</span>
+          <span>•</span>
+          <span><i data-feather="clock" style="width: 13px; height: 13px; vertical-align: middle;"></i> {{ shift_name }}</span>
+          <span>•</span>
+          <span><i data-feather="dollar-sign" style="width: 13px; height: 13px; vertical-align: middle;"></i> ${{ "{:.2f}".format(current_user.hourly_rate or 25.0) }}/hr</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+      <button onclick="openApplyLeaveModal()" class="neo-btn neo-btn-primary">
+        <i data-feather="calendar" style="width: 15px; height: 15px;"></i> Apply for Leave
+      </button>
+      <button onclick="openRegularizeModal()" class="neo-btn neo-btn-outline">
+        <i data-feather="edit" style="width: 15px; height: 15px;"></i> Request Regularization
+      </button>
+      <button onclick="openChangePasswordModal()" class="neo-btn" style="background: rgba(255, 255, 255, 0.05);">
+        <i data-feather="key" style="width: 15px; height: 15px;"></i> Password
+      </button>
+    </div>
+  </div>
+
+  <!-- Leave Balances Overview Cards -->
+  <div>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+      <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.1rem; font-weight: 700; color: #ffffff; display: flex; align-items: center; gap: 8px;">
+        <i data-feather="pie-chart" style="width: 16px; height: 16px; color: var(--primary);"></i> Annual Leave Balances ({{ today_str[:4] }})
+      </h3>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px;">
+      {% for b in balances %}
+      <div class="stat-card" style="padding: 16px; position: relative;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+          <div>
+            <div style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); font-weight: 700;">
+              {{ b.leave_type_name }} ({{ b.leave_type_code }})
+            </div>
+            <div style="font-size: 1.8rem; font-weight: 800; color: {% if b.remaining_days > 2 %}#34d399{% elif b.remaining_days > 0 %}#fbbf24{% else %}#f87171{% endif %}; margin-top: 4px;">
+              {{ b.remaining_days }}
+              <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">days left</span>
+            </div>
+          </div>
+          <span class="neo-badge {% if b.is_paid %}neo-badge-success{% else %}neo-badge-warning{% endif %}" style="font-size: 0.68rem;">
+            {% if b.is_paid %}PAID{% else %}UNPAID{% endif %}
+          </span>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #94a3b8; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border-subtle);">
+          <span>Allocated: <strong>{{ b.allocated_days }}d</strong></span>
+          <span>Used: <strong>{{ b.used_days }}d</strong></span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Compensation & Hours Snapshot -->
+  {% if my_payroll %}
+  <div class="neo-card" style="background: rgba(30, 41, 59, 0.4); border-left: 4px solid #6366f1;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+      <div>
+        <div style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; color: #a5b4fc; font-weight: 700;">
+          Current Month Estimated Earnings (MTD)
+        </div>
+        <div style="display: flex; align-items: baseline; gap: 12px; margin-top: 4px;">
+          <span style="font-size: 1.85rem; font-weight: 800; color: #ffffff;">
+            ${{ "{:,.2f}".format(my_payroll.net_pay) }}
+          </span>
+          <span style="font-size: 0.85rem; color: #94a3b8;">
+            (Base: ${{ "{:,.2f}".format(my_payroll.base_pay) }} + OT: ${{ "{:,.2f}".format(my_payroll.overtime_pay) }} - Ded: ${{ "{:,.2f}".format(my_payroll.deductions) }})
+          </span>
+        </div>
+      </div>
+      <div style="display: flex; gap: 20px; font-size: 0.82rem;">
+        <div>
+          <div style="color: var(--text-muted);">Days Worked</div>
+          <div style="font-size: 1.1rem; font-weight: 700; color: #ffffff;">{{ my_payroll.days_worked }} days</div>
+        </div>
+        <div>
+          <div style="color: var(--text-muted);">Regular Hours</div>
+          <div style="font-size: 1.1rem; font-weight: 700; color: #38bdf8;">{{ my_payroll.regular_hours }} hrs</div>
+        </div>
+        <div>
+          <div style="color: var(--text-muted);">Overtime</div>
+          <div style="font-size: 1.1rem; font-weight: 700; color: #a855f7;">{{ my_payroll.overtime_hours }} hrs</div>
+        </div>
+        <div>
+          <div style="color: var(--text-muted);">Late Marks</div>
+          <div style="font-size: 1.1rem; font-weight: 700; color: #fbbf24;">{{ my_payroll.late_marks }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Main Grid: Attendance Activity & Requests -->
+  <div style="display: grid; grid-template-columns: 1.4fr 1.1fr; gap: 20px;">
+
+    <!-- Left: My Monthly Attendance Log -->
+    <div class="neo-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.15rem; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 8px;">
+          <i data-feather="activity" style="width: 17px; height: 17px; color: var(--primary);"></i> My Attendance Log (Current Month)
+        </h3>
+        <span style="font-size: 0.8rem; color: var(--text-muted);">
+          Total: {{ my_logs|length }} punches
+        </span>
+      </div>
+
+      <div class="neo-table-wrapper" style="max-height: 480px; overflow-y: auto;">
+        <table class="neo-table">
+          <thead>
+            <tr>
+              <th>Date & Time</th>
+              <th>Punch Type</th>
+              <th>Status</th>
+              <th>Device</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for log in my_logs %}
+            <tr>
+              <td style="font-weight: 600;">
+                {{ log.timestamp.strftime('%d %b %Y, %I:%M:%S %p') }}
+              </td>
+              <td>
+                <span class="punch-badge {% if log.punch_type == 'IN' %}punch-in{% else %}punch-out{% endif %}">
+                  {{ log.punch_type }}
+                </span>
+              </td>
+              <td>
+                <span class="status-badge {% if log.status == 'ON_TIME' %}status-ontime{% elif log.status == 'LATE' %}status-late{% elif log.status == 'ON_LEAVE' %}status-excused{% elif log.status == 'REGULARIZED' %}status-overtime{% else %}status-halfday{% endif %}">
+                  {{ log.status }}
+                </span>
+              </td>
+              <td style="font-size: 0.8rem; color: var(--text-muted);">
+                {{ log.device_id }}
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="4" style="text-align: center; padding: 30px; color: var(--text-muted);">
+                No attendance punches recorded for this month yet. Use the kiosk to scan your face.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Right: Leave & Regularization Applications -->
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+
+      <!-- My Leave Applications -->
+      <div class="neo-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+          <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.1rem; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 8px;">
+            <i data-feather="calendar" style="width: 16px; height: 16px; color: #f59e0b;"></i> My Leave Requests
+          </h3>
+          <button onclick="openApplyLeaveModal()" class="neo-btn neo-btn-outline" style="font-size: 0.75rem; padding: 4px 10px;">
+            + Apply
+          </button>
+        </div>
+
+        <div class="neo-table-wrapper" style="max-height: 240px; overflow-y: auto;">
+          <table class="neo-table">
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Dates</th>
+                <th>Days</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for lr in my_leaves %}
+              <tr>
+                <td style="font-weight: 600;">{{ lr.leave_type.name if lr.leave_type else 'Leave' }}</td>
+                <td style="font-size: 0.78rem;">{{ lr.start_date.strftime('%b %d') }} – {{ lr.end_date.strftime('%b %d') }}</td>
+                <td>{{ lr.total_days }}d</td>
+                <td>
+                  <span class="status-badge {% if lr.status == 'APPROVED' %}status-ontime{% elif lr.status == 'REJECTED' %}status-late{% else %}status-halfday{% endif %}">
+                    {{ lr.status }}
+                  </span>
+                </td>
+              </tr>
+              {% else %}
+              <tr>
+                <td colspan="4" style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 0.85rem;">
+                  No leave applications submitted.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- My Regularization Requests -->
+      <div class="neo-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+          <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.1rem; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 8px;">
+            <i data-feather="check-square" style="width: 16px; height: 16px; color: #3b82f6;"></i> Regularization Requests
+          </h3>
+          <button onclick="openRegularizeModal()" class="neo-btn neo-btn-outline" style="font-size: 0.75rem; padding: 4px 10px;">
+            + Request
+          </button>
+        </div>
+
+        <div class="neo-table-wrapper" style="max-height: 240px; overflow-y: auto;">
+          <table class="neo-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Punch Times</th>
+                <th>Reason</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for rr in my_regularizations %}
+              <tr>
+                <td style="font-weight: 600;">{{ rr.attendance_date.strftime('%d %b %Y') }}</td>
+                <td style="font-size: 0.78rem;">
+                  IN: {{ rr.requested_punch_in or '—' }} | OUT: {{ rr.requested_punch_out or '—' }}
+                </td>
+                <td style="font-size: 0.78rem; color: var(--text-muted); max-width: 120px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+                  {{ rr.reason }}
+                </td>
+                <td>
+                  <span class="status-badge {% if rr.status == 'APPROVED' %}status-ontime{% elif rr.status == 'REJECTED' %}status-late{% else %}status-halfday{% endif %}">
+                    {{ rr.status }}
+                  </span>
+                </td>
+              </tr>
+              {% else %}
+              <tr>
+                <td colspan="4" style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 0.85rem;">
+                  No correction requests submitted.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Upcoming Holidays Widget -->
+      {% if upcoming_holidays %}
+      <div class="neo-card" style="background: rgba(16, 185, 129, 0.05); border: 1px dashed rgba(16, 185, 129, 0.3);">
+        <div style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; color: #34d399; font-weight: 700; display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
+          <i data-feather="sun" style="width: 14px; height: 14px;"></i> Upcoming Holidays
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          {% for h in upcoming_holidays %}
+          <div style="display: flex; justify-content: space-between; font-size: 0.82rem;">
+            <span style="color: #ffffff; font-weight: 600;">{{ h.name }}</span>
+            <span style="color: #94a3b8;">{{ h.holiday_date.strftime('%A, %d %b') }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal 1: Apply for Leave -->
+<div id="apply-leave-modal" class="neo-modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(6px); z-index: 1000; align-items: center; justify-content: center;">
+  <div class="neo-card" style="max-width: 500px; width: 90%; background: #0f172a; border: 1px solid var(--border-subtle); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+      <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 8px;">
+        <i data-feather="calendar" style="width: 18px; height: 18px; color: var(--primary);"></i> Apply for Leave
+      </h3>
+      <button onclick="closeApplyLeaveModal()" class="neo-btn" style="padding: 4px 8px; font-size: 1rem;">&times;</button>
+    </div>
+
+    <form id="apply-leave-form" onsubmit="submitLeaveApplication(event)" style="display: flex; flex-direction: column; gap: 14px;">
+      <div>
+        <label class="neo-label">Leave Type</label>
+        <select id="leave-type-id" class="neo-input" required>
+          {% for lt in leave_types %}
+          <option value="{{ lt.id }}">{{ lt.name }} ({{ lt.code }}) - {% if lt.is_paid %}Paid{% else %}Unpaid{% endif %}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div>
+          <label class="neo-label">Start Date</label>
+          <input type="date" id="leave-start-date" class="neo-input" required min="{{ today_str }}">
+        </div>
+        <div>
+          <label class="neo-label">End Date</label>
+          <input type="date" id="leave-end-date" class="neo-input" required min="{{ today_str }}">
+        </div>
+      </div>
+
+      <div>
+        <label class="neo-label">Reason for Absence</label>
+        <textarea id="leave-reason" class="neo-input" rows="3" placeholder="Provide a brief explanation for HR approval..." required style="resize: vertical;"></textarea>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
+        <button type="button" onclick="closeApplyLeaveModal()" class="neo-btn">Cancel</button>
+        <button type="submit" id="submit-leave-btn" class="neo-btn neo-btn-primary">
+          <i data-feather="send" style="width: 15px; height: 15px;"></i> Submit Application
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal 2: Request Regularization -->
+<div id="regularize-modal" class="neo-modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(6px); z-index: 1000; align-items: center; justify-content: center;">
+  <div class="neo-card" style="max-width: 500px; width: 90%; background: #0f172a; border: 1px solid var(--border-subtle); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+      <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 8px;">
+        <i data-feather="edit" style="width: 18px; height: 18px; color: #3b82f6;"></i> Missed Punch Regularization
+      </h3>
+      <button onclick="closeRegularizeModal()" class="neo-btn" style="padding: 4px 8px; font-size: 1rem;">&times;</button>
+    </div>
+
+    <form id="regularize-form" onsubmit="submitRegularization(event)" style="display: flex; flex-direction: column; gap: 14px;">
+      <div>
+        <label class="neo-label">Date of Missed Punch</label>
+        <input type="date" id="reg-date" class="neo-input" required max="{{ today_str }}">
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div>
+          <label class="neo-label">Requested Punch IN</label>
+          <input type="time" id="reg-punch-in" class="neo-input" step="1">
+        </div>
+        <div>
+          <label class="neo-label">Requested Punch OUT</label>
+          <input type="time" id="reg-punch-out" class="neo-input" step="1">
+        </div>
+      </div>
+
+      <div>
+        <label class="neo-label">Reason for Missed Punch</label>
+        <textarea id="reg-reason" class="neo-input" rows="3" placeholder="Forgot badge, camera offline, offsite duty, etc." required style="resize: vertical;"></textarea>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
+        <button type="button" onclick="closeRegularizeModal()" class="neo-btn">Cancel</button>
+        <button type="submit" id="submit-reg-btn" class="neo-btn neo-btn-primary">
+          <i data-feather="send" style="width: 15px; height: 15px;"></i> Submit Request
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal 3: Change Password -->
+<div id="change-pwd-modal" class="neo-modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(6px); z-index: 1000; align-items: center; justify-content: center;">
+  <div class="neo-card" style="max-width: 440px; width: 90%; background: #0f172a; border: 1px solid var(--border-subtle); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+      <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 8px;">
+        <i data-feather="key" style="width: 18px; height: 18px; color: var(--primary);"></i> Change Account Password
+      </h3>
+      <button onclick="closeChangePasswordModal()" class="neo-btn" style="padding: 4px 8px; font-size: 1rem;">&times;</button>
+    </div>
+
+    <form id="change-pwd-form" onsubmit="submitPasswordChange(event)" style="display: flex; flex-direction: column; gap: 14px;">
+      <div>
+        <label class="neo-label">Current Password</label>
+        <input type="password" id="old-password" class="neo-input" required autocomplete="current-password">
+      </div>
+      <div>
+        <label class="neo-label">New Password (min 6 characters)</label>
+        <input type="password" id="new-password" class="neo-input" required minlength="6" autocomplete="new-password">
+      </div>
+      <div>
+        <label class="neo-label">Confirm New Password</label>
+        <input type="password" id="confirm-password" class="neo-input" required minlength="6" autocomplete="new-password">
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
+        <button type="button" onclick="closeChangePasswordModal()" class="neo-btn">Cancel</button>
+        <button type="submit" id="submit-pwd-btn" class="neo-btn neo-btn-primary">
+          Update Password
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  // Apply Leave Modal Handlers
+  function openApplyLeaveModal() {
+    document.getElementById('apply-leave-modal').style.display = 'flex';
+    feather.replace();
+  }
+  function closeApplyLeaveModal() {
+    document.getElementById('apply-leave-modal').style.display = 'none';
+  }
+
+  // Regularization Modal Handlers
+  function openRegularizeModal() {
+    document.getElementById('regularize-modal').style.display = 'flex';
+    feather.replace();
+  }
+  function closeRegularizeModal() {
+    document.getElementById('regularize-modal').style.display = 'none';
+  }
+
+  // Change Password Modal Handlers
+  function openChangePasswordModal() {
+    document.getElementById('change-pwd-modal').style.display = 'flex';
+    feather.replace();
+  }
+  function closeChangePasswordModal() {
+    document.getElementById('change-pwd-modal').style.display = 'none';
+  }
+
+  // Submit Leave Application
+  async function submitLeaveApplication(e) {
+    e.preventDefault();
+    const btn = document.getElementById('submit-leave-btn');
+    btn.disabled = true;
+
+    const payload = {
+      leave_type_id: parseInt(document.getElementById('leave-type-id').value),
+      start_date: document.getElementById('leave-start-date').value,
+      end_date: document.getElementById('leave-end-date').value,
+      reason: document.getElementById('leave-reason').value.trim()
+    };
+
+    try {
+      const res = await fetch('/api/v1/leaves/apply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Failed to submit leave');
+
+      showToast('Leave application submitted successfully!', 'success');
+      closeApplyLeaveModal();
+      setTimeout(() => location.reload(), 800);
+    } catch (err) {
+      showToast(err.message, 'danger');
+      btn.disabled = false;
+    }
+  }
+
+  // Submit Regularization
+  async function submitRegularization(e) {
+    e.preventDefault();
+    const btn = document.getElementById('submit-reg-btn');
+    btn.disabled = true;
+
+    const punchIn = document.getElementById('reg-punch-in').value;
+    const punchOut = document.getElementById('reg-punch-out').value;
+
+    if (!punchIn && !punchOut) {
+      showToast('Specify at least a Punch IN or Punch OUT time.', 'warning');
+      btn.disabled = false;
+      return;
+    }
+
+    const payload = {
+      attendance_date: document.getElementById('reg-date').value,
+      requested_punch_in: punchIn ? (punchIn.length === 5 ? punchIn + ':00' : punchIn) : null,
+      requested_punch_out: punchOut ? (punchOut.length === 5 ? punchOut + ':00' : punchOut) : null,
+      reason: document.getElementById('reg-reason').value.trim()
+    };
+
+    try {
+      const res = await fetch('/api/v1/regularizations/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Failed to submit regularization');
+
+      showToast('Regularization request submitted for manager review.', 'success');
+      closeRegularizeModal();
+      setTimeout(() => location.reload(), 800);
+    } catch (err) {
+      showToast(err.message, 'danger');
+      btn.disabled = false;
+    }
+  }
+
+  // Submit Password Change
+  async function submitPasswordChange(e) {
+    e.preventDefault();
+    const btn = document.getElementById('submit-pwd-btn');
+    const old_password = document.getElementById('old-password').value;
+    const new_password = document.getElementById('new-password').value;
+    const confirm = document.getElementById('confirm-password').value;
+
+    if (new_password !== confirm) {
+      showToast('New passwords do not match.', 'warning');
+      return;
+    }
+
+    btn.disabled = true;
+    try {
+      const res = await fetch('/api/v1/auth/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ old_password, new_password })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Password change failed');
+
+      showToast('Password changed successfully!', 'success');
+      closeChangePasswordModal();
+    } catch (err) {
+      showToast(err.message, 'danger');
+      btn.disabled = false;
+    }
+  }
+</script>
+{% endblock %}

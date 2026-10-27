@@ -91,6 +91,79 @@
 
   </div>
 
+  <!-- Enterprise Workforce Operations Quick Access -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
+    
+    <!-- Pending Leaves Card -->
+    <a href="/admin/leaves" class="neo-card" style="text-decoration: none; display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; transition: transform 0.2s ease, border-color 0.2s ease; border-left: 4px solid #f59e0b;">
+      <div style="display: flex; align-items: center; gap: 14px;">
+        <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(245, 158, 11, 0.15); color: #fbbf24; display: flex; align-items: center; justify-content: center;">
+          <i data-feather="calendar" style="width: 20px; height: 20px;"></i>
+        </div>
+        <div>
+          <div style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 700;">Leave Requests</div>
+          <div style="font-size: 1.25rem; font-weight: 800; color: #ffffff; margin-top: 2px;">
+            {{ pending_leaves_count }} Pending
+          </div>
+        </div>
+      </div>
+      <i data-feather="chevron-right" style="width: 18px; height: 18px; color: var(--text-muted);"></i>
+    </a>
+
+    <!-- Attendance Regularization -->
+    <a href="/admin/leaves" class="neo-card" style="text-decoration: none; display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; transition: transform 0.2s ease, border-color 0.2s ease; border-left: 4px solid #3b82f6;">
+      <div style="display: flex; align-items: center; gap: 14px;">
+        <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(59, 130, 246, 0.15); color: #60a5fa; display: flex; align-items: center; justify-content: center;">
+          <i data-feather="check-square" style="width: 20px; height: 20px;"></i>
+        </div>
+        <div>
+          <div style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 700;">Regularizations</div>
+          <div style="font-size: 1.25rem; font-weight: 800; color: #ffffff; margin-top: 2px;">
+            {{ pending_reg_count }} Pending
+          </div>
+        </div>
+      </div>
+      <i data-feather="chevron-right" style="width: 18px; height: 18px; color: var(--text-muted);"></i>
+    </a>
+
+    <!-- Upcoming Holiday -->
+    <a href="/admin/holidays" class="neo-card" style="text-decoration: none; display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; transition: transform 0.2s ease, border-color 0.2s ease; border-left: 4px solid #10b981;">
+      <div style="display: flex; align-items: center; gap: 14px;">
+        <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(16, 185, 129, 0.15); color: #34d399; display: flex; align-items: center; justify-content: center;">
+          <i data-feather="sun" style="width: 20px; height: 20px;"></i>
+        </div>
+        <div>
+          <div style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 700;">Next Holiday</div>
+          <div style="font-size: 0.95rem; font-weight: 700; color: #ffffff; margin-top: 2px;">
+            {% if upcoming_holiday %}
+              {{ upcoming_holiday.name }} ({{ upcoming_holiday.holiday_date.strftime('%b %d') }})
+            {% else %}
+              None Scheduled
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <i data-feather="chevron-right" style="width: 18px; height: 18px; color: var(--text-muted);"></i>
+    </a>
+
+    <!-- Shifts & Rostering -->
+    <a href="/admin/shifts" class="neo-card" style="text-decoration: none; display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; transition: transform 0.2s ease, border-color 0.2s ease; border-left: 4px solid #8b5cf6;">
+      <div style="display: flex; align-items: center; gap: 14px;">
+        <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(139, 92, 246, 0.15); color: #a78bfa; display: flex; align-items: center; justify-content: center;">
+          <i data-feather="clock" style="width: 20px; height: 20px;"></i>
+        </div>
+        <div>
+          <div style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 700;">Shift Rosters</div>
+          <div style="font-size: 1.25rem; font-weight: 800; color: #ffffff; margin-top: 2px;">
+            {{ total_shifts_count }} Active Shifts
+          </div>
+        </div>
+      </div>
+      <i data-feather="chevron-right" style="width: 18px; height: 18px; color: var(--text-muted);"></i>
+    </a>
+
+  </div>
+
   <!-- Operational Grid: Live Tracking Activity & Payroll Snapshot -->
   <div style="display: grid; grid-template-columns: 1.4fr 1.1fr; gap: 20px;">
 

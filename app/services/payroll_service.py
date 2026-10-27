@@ -4,6 +4,7 @@ import io
 import csv
 from sqlalchemy.orm import Session
 from app.models import User, AttendanceLog, Department
+from app.services.leave_service import LeaveService
 
 
 class PayrollService:
@@ -14,10 +15,11 @@ class PayrollService:
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
         department_id: Optional[int] = None,
+        user_id: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
-        Calculate role-based payroll, tracked work hours, overtime, and deductions
-        for all active users within the specified date range.
+        Calculate role-based payroll, tracked work hours, overtime, approved paid leaves,
+        and deductions for all active users (or a specific user) within the specified date range.
         """
         today = date.today()
         if not start_date:
@@ -42,7 +44,9 @@ class PayrollService:
 
         # Query users
         u_query = db.query(User).filter(User.is_active == True)
-        if department_id:
+        if user_id:
+            u_query = u_query.filter(User.id == user_id)
+        elif department_id:
             u_query = u_query.filter(User.department_id == department_id)
         users = u_query.order_by(User.full_name.asc()).all()
 
@@ -76,12 +80,25 @@ class PayrollService:
             user_reg_hours = 0.0
             user_ot_hours = 0.0
             late_days_count = 0
+            leave_days_count = 0
 
             for d, day_logs in days_map.items():
+                # Check if marked on leave
+                is_leave_day = any(l.status == "ON_LEAVE" for l in day_logs)
+                if not is_leave_day:
+                    is_on_leave, _, is_paid = LeaveService.is_user_on_approved_leave(db, user.id, d)
+                    if is_on_leave and is_paid:
+                        is_leave_day = True
+
+                if is_leave_day:
+                    leave_days_count += 1
+                    user_reg_hours += 8.0  # Standard paid workday for approved leave
+                    continue
+
                 in_punches = [l for l in day_logs if l.punch_type == "IN"]
                 out_punches = [l for l in day_logs if l.punch_type == "OUT"]
 
-                # Check if marked late on this day
+                # Check if marked late on this day (excluding excused / regularized)
                 if any(l.status == "LATE" for l in day_logs):
                     late_days_count += 1
 
@@ -133,6 +150,7 @@ class PayrollService:
                 "department": dept_name,
                 "hourly_rate": hourly_rate,
                 "days_worked": days_count,
+                "leave_days": leave_days_count,
                 "regular_hours": round(user_reg_hours, 1),
                 "overtime_hours": round(user_ot_hours, 1),
                 "total_hours": user_total_hours,
@@ -183,6 +201,7 @@ class PayrollService:
             "Role",
             "Rate ($/hr)",
             "Days Worked",
+            "Leave Days",
             "Regular Hours",
             "Overtime Hours",
             "Total Hours",
@@ -203,6 +222,7 @@ class PayrollService:
                 r["role"],
                 f"${r['hourly_rate']:.2f}",
                 r["days_worked"],
+                r.get("leave_days", 0),
                 r["regular_hours"],
                 r["overtime_hours"],
                 r["total_hours"],

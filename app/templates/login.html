@@ -83,7 +83,11 @@
 
       showToast(`Welcome back, ${data.full_name}!`, 'success');
       setTimeout(() => {
-        window.location.href = '/admin';
+        if (['ADMIN', 'SUPER_ADMIN', 'HR_MANAGER'].includes(data.role)) {
+          window.location.href = '/admin';
+        } else {
+          window.location.href = '/portal';
+        }
       }, 500);
     } catch (err) {
       showToast(err.message, 'danger');

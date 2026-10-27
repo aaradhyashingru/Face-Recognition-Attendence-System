@@ -1,0 +1,589 @@
+{% extends "base.html" %}
+
+{% block title %}Leave & Regularization Management — FRAS Enterprise{% endblock %}
+
+{% block content %}
+<div style="max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px;">
+
+  <!-- Header -->
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+    <div>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <h1 style="font-family: 'Outfit', sans-serif; font-size: 1.65rem; font-weight: 800; color: #ffffff; letter-spacing: -0.01em;">
+          Leave & Regularization Approvals
+        </h1>
+        <span class="role-badge {% if current_user.role == 'SUPER_ADMIN' %}role-super{% elif current_user.role == 'HR_MANAGER' %}role-hr{% else %}role-admin{% endif %}">
+          HR OPERATIONS
+        </span>
+      </div>
+      <p style="color: var(--text-muted); font-size: 0.88rem; margin-top: 3px;">
+        Manage employee time-off applications, missed-punch corrections, and annual leave quota allocations.
+      </p>
+    </div>
+
+    <!-- Quick Action -->
+    <div style="display: flex; gap: 10px;">
+      <button onclick="openAddLeaveTypeModal()" class="neo-btn neo-btn-outline">
+        <i data-feather="plus" style="width: 15px; height: 15px;"></i> New Leave Type
+      </button>
+      <button onclick="openAdjustBalanceModal()" class="neo-btn neo-btn-primary">
+        <i data-feather="sliders" style="width: 15px; height: 15px;"></i> Adjust Employee Quota
+      </button>
+    </div>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="stat-card-grid">
+    <div class="stat-card">
+      <div class="stat-icon-box" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">
+        <i data-feather="calendar" style="width: 24px; height: 24px;"></i>
+      </div>
+      <div>
+        <div class="stat-label">Pending Leaves</div>
+        <div class="stat-value" style="color: #fbbf24;">{{ pending_leaves|length }}</div>
+        <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 2px;">Awaiting Review</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon-box" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa;">
+        <i data-feather="check-square" style="width: 24px; height: 24px;"></i>
+      </div>
+      <div>
+        <div class="stat-label">Pending Regularizations</div>
+        <div class="stat-value" style="color: #60a5fa;">{{ pending_reg|length }}</div>
+        <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 2px;">Missed Punch Fixes</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon-box" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">
+        <i data-feather="layers" style="width: 24px; height: 24px;"></i>
+      </div>
+      <div>
+        <div class="stat-label">Leave Types</div>
+        <div class="stat-value">{{ leave_types|length }}</div>
+        <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 2px;">Configured Policies</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon-box" style="background: rgba(139, 92, 246, 0.15); color: #a78bfa;">
+        <i data-feather="users" style="width: 24px; height: 24px;"></i>
+      </div>
+      <div>
+        <div class="stat-label">Total Staff</div>
+        <div class="stat-value">{{ users|length }}</div>
+        <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 2px;">Covered Employees</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabbed Content Panel -->
+  <div class="neo-card" style="padding: 0; overflow: hidden;">
+    <!-- Tab Navigation -->
+    <div style="display: flex; border-bottom: 1px solid var(--border-subtle); background: rgba(15, 23, 42, 0.6); overflow-x: auto;">
+      <button onclick="switchTab('leaves-pending')" id="tab-btn-leaves-pending" class="neo-btn active" style="border-radius: 0; border: none; border-bottom: 2px solid var(--primary); padding: 14px 22px;">
+        <i data-feather="calendar" style="width: 15px; height: 15px;"></i> Pending Leaves ({{ pending_leaves|length }})
+      </button>
+      <button onclick="switchTab('reg-pending')" id="tab-btn-reg-pending" class="neo-btn" style="border-radius: 0; border: none; border-bottom: 2px solid transparent; padding: 14px 22px;">
+        <i data-feather="check-square" style="width: 15px; height: 15px;"></i> Pending Regularizations ({{ pending_reg|length }})
+      </button>
+      <button onclick="switchTab('leaves-all')" id="tab-btn-leaves-all" class="neo-btn" style="border-radius: 0; border: none; border-bottom: 2px solid transparent; padding: 14px 22px;">
+        <i data-feather="archive" style="width: 15px; height: 15px;"></i> Leave History
+      </button>
+      <button onclick="switchTab('reg-all')" id="tab-btn-reg-all" class="neo-btn" style="border-radius: 0; border: none; border-bottom: 2px solid transparent; padding: 14px 22px;">
+        <i data-feather="file-text" style="width: 15px; height: 15px;"></i> Regularization History
+      </button>
+      <button onclick="switchTab('types')" id="tab-btn-types" class="neo-btn" style="border-radius: 0; border: none; border-bottom: 2px solid transparent; padding: 14px 22px;">
+        <i data-feather="settings" style="width: 15px; height: 15px;"></i> Leave Policies
+      </button>
+    </div>
+
+    <!-- Tab 1: Pending Leaves -->
+    <div id="tab-leaves-pending" style="padding: 20px;">
+      <div class="neo-table-wrapper">
+        <table class="neo-table">
+          <thead>
+            <tr>
+              <th>Employee</th>
+              <th>Department</th>
+              <th>Leave Type</th>
+              <th>Date Range</th>
+              <th>Days</th>
+              <th>Reason</th>
+              <th>Applied At</th>
+              <th style="text-align: right;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for lr in pending_leaves %}
+            <tr>
+              <td style="font-weight: 700;">
+                {{ lr.user.full_name }}
+                <span style="font-size: 0.72rem; color: var(--text-muted); display: block;">{{ lr.user.user_code }}</span>
+              </td>
+              <td>{{ lr.user.department.name if (lr.user and lr.user.department) else 'General' }}</td>
+              <td>
+                <span class="neo-badge {% if lr.leave_type.is_paid %}neo-badge-success{% else %}neo-badge-warning{% endif %}">
+                  {{ lr.leave_type.name }} ({{ lr.leave_type.code }})
+                </span>
+              </td>
+              <td style="font-weight: 600;">
+                {{ lr.start_date.strftime('%d %b %Y') }} – {{ lr.end_date.strftime('%d %b %Y') }}
+              </td>
+              <td><strong>{{ lr.total_days }}</strong> days</td>
+              <td style="font-size: 0.85rem; max-width: 200px; color: #cbd5e1;">{{ lr.reason }}</td>
+              <td style="font-size: 0.78rem; color: var(--text-muted);">{{ lr.created_at.strftime('%d %b %Y %H:%M') }}</td>
+              <td style="text-align: right;">
+                <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                  <button onclick="openReviewLeaveModal({{ lr.id }}, '{{ lr.user.full_name }}', 'APPROVED')" class="neo-btn neo-btn-success" style="padding: 4px 10px; font-size: 0.78rem;">
+                    <i data-feather="check" style="width: 13px; height: 13px;"></i> Approve
+                  </button>
+                  <button onclick="openReviewLeaveModal({{ lr.id }}, '{{ lr.user.full_name }}', 'REJECTED')" class="neo-btn neo-btn-danger" style="padding: 4px 10px; font-size: 0.78rem;">
+                    <i data-feather="x" style="width: 13px; height: 13px;"></i> Reject
+                  </button>
+                </div>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="8" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                <i data-feather="check-circle" style="width: 32px; height: 32px; color: #34d399; margin-bottom: 8px;"></i>
+                <div>All pending leave requests are reviewed. No backlog!</div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab 2: Pending Regularizations -->
+    <div id="tab-reg-pending" style="display: none; padding: 20px;">
+      <div class="neo-table-wrapper">
+        <table class="neo-table">
+          <thead>
+            <tr>
+              <th>Employee</th>
+              <th>Department</th>
+              <th>Attendance Date</th>
+              <th>Requested Times</th>
+              <th>Reason</th>
+              <th>Submitted At</th>
+              <th style="text-align: right;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for rr in pending_reg %}
+            <tr>
+              <td style="font-weight: 700;">
+                {{ rr.user.full_name }}
+                <span style="font-size: 0.72rem; color: var(--text-muted); display: block;">{{ rr.user.user_code }}</span>
+              </td>
+              <td>{{ rr.user.department.name if (rr.user and rr.user.department) else 'General' }}</td>
+              <td style="font-weight: 600;">{{ rr.attendance_date.strftime('%d %b %Y') }}</td>
+              <td style="font-size: 0.85rem;">
+                {% if rr.requested_punch_in %}
+                  <span class="punch-badge punch-in" style="font-size: 0.7rem;">IN: {{ rr.requested_punch_in }}</span>
+                {% endif %}
+                {% if rr.requested_punch_out %}
+                  <span class="punch-badge punch-out" style="font-size: 0.7rem; margin-left: 4px;">OUT: {{ rr.requested_punch_out }}</span>
+                {% endif %}
+              </td>
+              <td style="font-size: 0.85rem; max-width: 220px; color: #cbd5e1;">{{ rr.reason }}</td>
+              <td style="font-size: 0.78rem; color: var(--text-muted);">{{ rr.created_at.strftime('%d %b %Y %H:%M') }}</td>
+              <td style="text-align: right;">
+                <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                  <button onclick="reviewRegularization({{ rr.id }}, 'APPROVED')" class="neo-btn neo-btn-success" style="padding: 4px 10px; font-size: 0.78rem;">
+                    <i data-feather="check" style="width: 13px; height: 13px;"></i> Approve & Fix
+                  </button>
+                  <button onclick="reviewRegularization({{ rr.id }}, 'REJECTED')" class="neo-btn neo-btn-danger" style="padding: 4px 10px; font-size: 0.78rem;">
+                    <i data-feather="x" style="width: 13px; height: 13px;"></i> Reject
+                  </button>
+                </div>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="7" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                <i data-feather="check-circle" style="width: 32px; height: 32px; color: #34d399; margin-bottom: 8px;"></i>
+                <div>No pending regularization requests.</div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab 3: Historical Leaves -->
+    <div id="tab-leaves-all" style="display: none; padding: 20px;">
+      <div class="neo-table-wrapper">
+        <table class="neo-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Employee</th>
+              <th>Leave Type</th>
+              <th>Date Range</th>
+              <th>Days</th>
+              <th>Status</th>
+              <th>Reviewed By</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for lr in all_leaves %}
+            <tr>
+              <td>#{{ lr.id }}</td>
+              <td style="font-weight: 600;">{{ lr.user.full_name }} ({{ lr.user.user_code }})</td>
+              <td>{{ lr.leave_type.name }}</td>
+              <td>{{ lr.start_date.strftime('%d %b %Y') }} – {{ lr.end_date.strftime('%d %b %Y') }}</td>
+              <td>{{ lr.total_days }}d</td>
+              <td>
+                <span class="status-badge {% if lr.status == 'APPROVED' %}status-ontime{% elif lr.status == 'REJECTED' %}status-late{% else %}status-halfday{% endif %}">
+                  {{ lr.status }}
+                </span>
+              </td>
+              <td>{{ lr.reviewer.full_name if lr.reviewer else '—' }}</td>
+              <td style="font-size: 0.8rem; color: var(--text-muted);">{{ lr.review_notes or '—' }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab 4: Historical Regularizations -->
+    <div id="tab-reg-all" style="display: none; padding: 20px;">
+      <div class="neo-table-wrapper">
+        <table class="neo-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Employee</th>
+              <th>Date</th>
+              <th>Requested Times</th>
+              <th>Reason</th>
+              <th>Status</th>
+              <th>Reviewed By</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for rr in all_reg %}
+            <tr>
+              <td>#{{ rr.id }}</td>
+              <td style="font-weight: 600;">{{ rr.user.full_name }} ({{ rr.user.user_code }})</td>
+              <td>{{ rr.attendance_date.strftime('%d %b %Y') }}</td>
+              <td>IN: {{ rr.requested_punch_in or '—' }} | OUT: {{ rr.requested_punch_out or '—' }}</td>
+              <td style="font-size: 0.82rem; color: #cbd5e1;">{{ rr.reason }}</td>
+              <td>
+                <span class="status-badge {% if rr.status == 'APPROVED' %}status-ontime{% elif rr.status == 'REJECTED' %}status-late{% else %}status-halfday{% endif %}">
+                  {{ rr.status }}
+                </span>
+              </td>
+              <td>{{ rr.reviewer.full_name if rr.reviewer else '—' }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab 5: Leave Policies & Types -->
+    <div id="tab-types" style="display: none; padding: 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+        <h3 style="font-size: 1.05rem; font-weight: 700; color: #ffffff;">Configured Corporate Leave Policies</h3>
+        <button onclick="openAddLeaveTypeModal()" class="neo-btn neo-btn-primary" style="font-size: 0.8rem;">
+          + Add Policy
+        </button>
+      </div>
+      <div class="neo-table-wrapper">
+        <table class="neo-table">
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Name</th>
+              <th>Annual Allocation</th>
+              <th>Paid Status</th>
+              <th>Description</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for lt in leave_types %}
+            <tr>
+              <td style="font-weight: 800; color: #38bdf8;">{{ lt.code }}</td>
+              <td style="font-weight: 700;">{{ lt.name }}</td>
+              <td><strong>{{ lt.default_days_per_year }}</strong> days/year</td>
+              <td>
+                <span class="neo-badge {% if lt.is_paid %}neo-badge-success{% else %}neo-badge-warning{% endif %}">
+                  {% if lt.is_paid %}PAID LEAVE{% else %}LOSS OF PAY{% endif %}
+                </span>
+              </td>
+              <td style="font-size: 0.82rem; color: var(--text-muted);">{{ lt.description or '—' }}</td>
+              <td>
+                <span class="status-badge status-ontime">ACTIVE</span>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Modal 1: Review Leave Request -->
+<div id="review-leave-modal" class="neo-modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(6px); z-index: 1000; align-items: center; justify-content: center;">
+  <div class="neo-card" style="max-width: 460px; width: 90%; background: #0f172a; border: 1px solid var(--border-subtle);">
+    <h3 id="review-leave-title" style="font-family: 'Outfit', sans-serif; font-size: 1.2rem; font-weight: 800; color: #ffffff; margin-bottom: 14px;">
+      Review Leave Application
+    </h3>
+    <form onsubmit="submitLeaveReview(event)" style="display: flex; flex-direction: column; gap: 14px;">
+      <input type="hidden" id="review-leave-id">
+      <input type="hidden" id="review-leave-status">
+      <div>
+        <label class="neo-label">Decision Notes / Feedback (Optional)</label>
+        <textarea id="review-leave-notes" class="neo-input" rows="3" placeholder="Approval remarks or reason for rejection..."></textarea>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button type="button" onclick="closeReviewLeaveModal()" class="neo-btn">Cancel</button>
+        <button type="submit" id="submit-review-leave-btn" class="neo-btn neo-btn-primary">Confirm</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal 2: Adjust Leave Quota -->
+<div id="adjust-balance-modal" class="neo-modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(6px); z-index: 1000; align-items: center; justify-content: center;">
+  <div class="neo-card" style="max-width: 480px; width: 90%; background: #0f172a; border: 1px solid var(--border-subtle);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.2rem; font-weight: 800; color: #ffffff;">
+        Adjust Employee Leave Quota
+      </h3>
+      <button onclick="closeAdjustBalanceModal()" class="neo-btn" style="padding: 4px 8px;">&times;</button>
+    </div>
+    <form onsubmit="submitAdjustBalance(event)" style="display: flex; flex-direction: column; gap: 14px;">
+      <div>
+        <label class="neo-label">Select Employee</label>
+        <select id="adjust-user-id" class="neo-input" required>
+          {% for u in users %}
+          <option value="{{ u.id }}">{{ u.full_name }} ({{ u.user_code }}) - {{ u.designation or 'Staff' }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="neo-label">Leave Policy</label>
+        <select id="adjust-leave-type-id" class="neo-input" required>
+          {% for lt in leave_types %}
+          <option value="{{ lt.id }}">{{ lt.name }} ({{ lt.code }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div>
+          <label class="neo-label">Calendar Year</label>
+          <input type="number" id="adjust-year" class="neo-input" value="2026" required>
+        </div>
+        <div>
+          <label class="neo-label">New Total Allocation (Days)</label>
+          <input type="number" id="adjust-allocated-days" class="neo-input" step="0.5" min="0" required placeholder="e.g. 15.0">
+        </div>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
+        <button type="button" onclick="closeAdjustBalanceModal()" class="neo-btn">Cancel</button>
+        <button type="submit" class="neo-btn neo-btn-primary">Update Quota</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal 3: Add Leave Type -->
+<div id="add-leave-type-modal" class="neo-modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(6px); z-index: 1000; align-items: center; justify-content: center;">
+  <div class="neo-card" style="max-width: 480px; width: 90%; background: #0f172a; border: 1px solid var(--border-subtle);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.2rem; font-weight: 800; color: #ffffff;">
+        Create Corporate Leave Policy
+      </h3>
+      <button onclick="closeAddLeaveTypeModal()" class="neo-btn" style="padding: 4px 8px;">&times;</button>
+    </div>
+    <form onsubmit="submitAddLeaveType(event)" style="display: flex; flex-direction: column; gap: 14px;">
+      <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px;">
+        <div>
+          <label class="neo-label">Policy Name</label>
+          <input type="text" id="lt-name" class="neo-input" placeholder="e.g. Paternity Leave" required>
+        </div>
+        <div>
+          <label class="neo-label">Code</label>
+          <input type="text" id="lt-code" class="neo-input" placeholder="e.g. PTL" required style="text-transform: uppercase;">
+        </div>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div>
+          <label class="neo-label">Default Days / Year</label>
+          <input type="number" id="lt-days" class="neo-input" step="0.5" value="10.0" required>
+        </div>
+        <div>
+          <label class="neo-label">Wage Policy</label>
+          <select id="lt-paid" class="neo-input">
+            <option value="true">Paid Leave</option>
+            <option value="false">Unpaid (Loss of Pay)</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="neo-label">Policy Description</label>
+        <textarea id="lt-desc" class="neo-input" rows="2" placeholder="Brief rules or criteria for eligibility..."></textarea>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
+        <button type="button" onclick="closeAddLeaveTypeModal()" class="neo-btn">Cancel</button>
+        <button type="submit" class="neo-btn neo-btn-primary">Create Policy</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  function switchTab(tabId) {
+    const tabs = ['leaves-pending', 'reg-pending', 'leaves-all', 'reg-all', 'types'];
+    tabs.forEach(t => {
+      document.getElementById('tab-' + t).style.display = (t === tabId) ? 'block' : 'none';
+      const btn = document.getElementById('tab-btn-' + t);
+      if (t === tabId) {
+        btn.classList.add('active');
+        btn.style.borderBottom = '2px solid var(--primary)';
+      } else {
+        btn.classList.remove('active');
+        btn.style.borderBottom = '2px solid transparent';
+      }
+    });
+    feather.replace();
+  }
+
+  function openReviewLeaveModal(id, name, status) {
+    document.getElementById('review-leave-id').value = id;
+    document.getElementById('review-leave-status').value = status;
+    document.getElementById('review-leave-title').textContent = `${status === 'APPROVED' ? 'Approve' : 'Reject'} Leave for ${name}`;
+    document.getElementById('review-leave-modal').style.display = 'flex';
+  }
+  function closeReviewLeaveModal() {
+    document.getElementById('review-leave-modal').style.display = 'none';
+  }
+
+  async function submitLeaveReview(e) {
+    e.preventDefault();
+    const id = document.getElementById('review-leave-id').value;
+    const status = document.getElementById('review-leave-status').value;
+    const notes = document.getElementById('review-leave-notes').value.trim();
+
+    try {
+      const res = await fetch(`/api/v1/leaves/requests/${id}/review`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: status, review_notes: notes })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Review failed');
+
+      showToast(`Leave request #${id} marked as ${status}!`, 'success');
+      closeReviewLeaveModal();
+      setTimeout(() => location.reload(), 800);
+    } catch (err) {
+      showToast(err.message, 'danger');
+    }
+  }
+
+  async function reviewRegularization(id, status) {
+    const notes = prompt(`Optional review notes for ${status}:`, '');
+    if (notes === null) return; // user cancelled
+
+    try {
+      const res = await fetch(`/api/v1/regularizations/${id}/review`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: status, review_notes: notes })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Review failed');
+
+      showToast(`Regularization #${id} ${status.toLowerCase()} successfully!`, 'success');
+      setTimeout(() => location.reload(), 800);
+    } catch (err) {
+      showToast(err.message, 'danger');
+    }
+  }
+
+  function openAdjustBalanceModal() {
+    document.getElementById('adjust-balance-modal').style.display = 'flex';
+  }
+  function closeAdjustBalanceModal() {
+    document.getElementById('adjust-balance-modal').style.display = 'none';
+  }
+
+  async function submitAdjustBalance(e) {
+    e.preventDefault();
+    const payload = {
+      user_id: parseInt(document.getElementById('adjust-user-id').value),
+      leave_type_id: parseInt(document.getElementById('adjust-leave-type-id').value),
+      year: parseInt(document.getElementById('adjust-year').value),
+      allocated_days: parseFloat(document.getElementById('adjust-allocated-days').value)
+    };
+
+    try {
+      const res = await fetch('/api/v1/leaves/balances/adjust', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Update failed');
+
+      showToast('Employee leave quota updated!', 'success');
+      closeAdjustBalanceModal();
+      setTimeout(() => location.reload(), 800);
+    } catch (err) {
+      showToast(err.message, 'danger');
+    }
+  }
+
+  function openAddLeaveTypeModal() {
+    document.getElementById('add-leave-type-modal').style.display = 'flex';
+  }
+  function closeAddLeaveTypeModal() {
+    document.getElementById('add-leave-type-modal').style.display = 'none';
+  }
+
+  async function submitAddLeaveType(e) {
+    e.preventDefault();
+    const payload = {
+      name: document.getElementById('lt-name').value.trim(),
+      code: document.getElementById('lt-code').value.trim().toUpperCase(),
+      default_days_per_year: parseFloat(document.getElementById('lt-days').value),
+      is_paid: document.getElementById('lt-paid').value === 'true',
+      description: document.getElementById('lt-desc').value.trim() || null
+    };
+
+    try {
+      const res = await fetch('/api/v1/leaves/types', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Failed to create leave policy');
+
+      showToast(`Leave policy '${payload.name}' created!`, 'success');
+      closeAddLeaveTypeModal();
+      setTimeout(() => location.reload(), 800);
+    } catch (err) {
+      showToast(err.message, 'danger');
+    }
+  }
+</script>
+{% endblock %}

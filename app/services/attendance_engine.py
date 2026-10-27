@@ -10,6 +10,7 @@ from app.config import (
     logger,
 )
 from app.models import AttendanceLog, User, Department
+from app.services.shift_service import ShiftService
 
 
 class AttendanceEngine:
@@ -96,34 +97,10 @@ class AttendanceEngine:
             last_punch_type = today_punches[-1].punch_type
             punch_type = "OUT" if last_punch_type == "IN" else "IN"
 
-        # 3. Determine Attendance Status (ON_TIME vs LATE)
-        shift_start_str = DEFAULT_SHIFT_START
-        grace_mins = DEFAULT_GRACE_PERIOD_MINS
-
-        # Check department defaults
-        if user.department:
-            shift_start_str = user.department.shift_start or DEFAULT_SHIFT_START
-            grace_mins = user.department.grace_period_mins or DEFAULT_GRACE_PERIOD_MINS
-
-        # Individual employee manual grace time override takes precedence
-        if getattr(user, "grace_period_mins", None) is not None:
-            grace_mins = user.grace_period_mins
-
+        # 3. Determine Attendance Status (ON_TIME vs LATE) via ShiftService
         status = "ON_TIME"
         if punch_type == "IN":
-            try:
-                parts = [int(p) for p in shift_start_str.strip().split(":")]
-                sh_h = parts[0]
-                sh_m = parts[1] if len(parts) > 1 else 0
-                sh_s = parts[2] if len(parts) > 2 else 0
-                shift_deadline = datetime.combine(
-                    date.today(), time(sh_h, sh_m, sh_s)
-                ) + timedelta(minutes=grace_mins)
-                if now > shift_deadline:
-                    status = "LATE"
-            except Exception as e:
-                logger.error("Shift calculation error: %s", e)
-                status = "ON_TIME"
+            status = ShiftService.evaluate_punch_status(user, now)
 
         # 4. Save Record
         log = AttendanceLog(
@@ -142,11 +119,10 @@ class AttendanceEngine:
         cls._cooldown_cache[user.id] = now
 
         logger.info(
-            "Recorded punch: user_code=%s punch_type=%s status=%s grace_mins=%d device=%s",
+            "Recorded punch: user_code=%s punch_type=%s status=%s device=%s",
             user.user_code,
             punch_type,
             status,
-            grace_mins,
             device_id,
         )
 

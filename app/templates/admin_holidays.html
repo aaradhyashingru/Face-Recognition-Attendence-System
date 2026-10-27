@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+
+{% block title %}Holiday Calendar — FRAS Enterprise{% endblock %}
+
+{% block content %}
+<div style="max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px;">
+
+  <!-- Header -->
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+    <div>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <h1 style="font-family: 'Outfit', sans-serif; font-size: 1.65rem; font-weight: 800; color: #ffffff; letter-spacing: -0.01em;">
+          Corporate & Statutory Holiday Calendar
+        </h1>
+        <span class="role-badge role-admin">
+          ORGANIZATION SCHEDULE
+        </span>
+      </div>
+      <p style="color: var(--text-muted); font-size: 0.88rem; margin-top: 3px;">
+        Configure official paid holidays, national festivals, and non-working business calendar days.
+      </p>
+    </div>
+
+    <!-- Quick Action -->
+    <button onclick="openAddHolidayModal()" class="neo-btn neo-btn-primary">
+      <i data-feather="plus" style="width: 15px; height: 15px;"></i> Add Holiday
+    </button>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="stat-card-grid">
+    <div class="stat-card">
+      <div class="stat-icon-box" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">
+        <i data-feather="sun" style="width: 24px; height: 24px;"></i>
+      </div>
+      <div>
+        <div class="stat-label">Total Holidays</div>
+        <div class="stat-value">{{ holidays|length }}</div>
+        <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 2px;">In Calendar Schedule</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon-box" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa;">
+        <i data-feather="calendar" style="width: 24px; height: 24px;"></i>
+      </div>
+      <div>
+        <div class="stat-label">Upcoming Holidays</div>
+        <div class="stat-value" style="color: #60a5fa;">{{ upcoming|length }}</div>
+        <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 2px;">Remaining This Year</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon-box" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">
+        <i data-feather="award" style="width: 24px; height: 24px;"></i>
+      </div>
+      <div>
+        <div class="stat-label">Next Scheduled Off</div>
+        <div class="stat-value" style="font-size: 1.2rem; color: #fbbf24;">
+          {% if upcoming %}
+            {{ upcoming[0].name }}
+          {% else %}
+            None
+          {% endif %}
+        </div>
+        <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 2px;">
+          {% if upcoming %}
+            {{ upcoming[0].holiday_date.strftime('%d %B %Y') }}
+          {% else %}
+            Calendar Complete
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon-box" style="background: rgba(139, 92, 246, 0.15); color: #a78bfa;">
+        <i data-feather="coffee" style="width: 24px; height: 24px;"></i>
+      </div>
+      <div>
+        <div class="stat-label">Weekend Policy</div>
+        <div class="stat-value" style="font-size: 1.25rem;">Sat & Sun</div>
+        <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 2px;">Standard 5-Day Week</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Holidays Table -->
+  <div class="neo-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.15rem; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 8px;">
+        <i data-feather="calendar" style="width: 17px; height: 17px; color: var(--primary);"></i> Scheduled Company Holidays
+      </h3>
+    </div>
+
+    <div class="neo-table-wrapper">
+      <table class="neo-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Day</th>
+            <th>Holiday Name</th>
+            <th>Category</th>
+            <th>Description</th>
+            <th>Annual Recurring</th>
+            <th style="text-align: right;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for h in holidays %}
+          <tr>
+            <td style="font-weight: 700; color: #ffffff;">
+              {{ h.holiday_date.strftime('%d %b %Y') }}
+            </td>
+            <td style="color: var(--text-muted); font-size: 0.85rem;">
+              {{ h.holiday_date.strftime('%A') }}
+            </td>
+            <td style="font-weight: 600; font-size: 0.95rem;">
+              {{ h.name }}
+            </td>
+            <td>
+              <span class="neo-badge {% if h.holiday_type == 'NATIONAL' %}neo-badge-success{% elif h.holiday_type == 'COMPANY' %}neo-badge-info{% else %}neo-badge-warning{% endif %}">
+                {{ h.holiday_type }}
+              </span>
+            </td>
+            <td style="font-size: 0.85rem; color: #cbd5e1; max-width: 260px;">
+              {{ h.description or 'Official company non-working day' }}
+            </td>
+            <td>
+              {% if h.is_recurring %}
+                <span style="color: #34d399; font-weight: 600; font-size: 0.82rem;">Yes</span>
+              {% else %}
+                <span style="color: var(--text-muted); font-size: 0.82rem;">One-time</span>
+              {% endif %}
+            </td>
+            <td style="text-align: right;">
+              <button onclick="deleteHoliday({{ h.id }}, '{{ h.name }}')" class="neo-btn neo-btn-danger" style="padding: 4px 10px; font-size: 0.78rem;">
+                <i data-feather="trash-2" style="width: 13px; height: 13px;"></i> Remove
+              </button>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="7" style="text-align: center; padding: 40px; color: var(--text-muted);">
+              No holidays added to the system yet. Click "Add Holiday" to configure statutory leaves.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal: Add Holiday -->
+<div id="add-holiday-modal" class="neo-modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(6px); z-index: 1000; align-items: center; justify-content: center;">
+  <div class="neo-card" style="max-width: 480px; width: 90%; background: #0f172a; border: 1px solid var(--border-subtle); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 8px;">
+        <i data-feather="sun" style="width: 18px; height: 18px; color: var(--primary);"></i> Add Company Holiday
+      </h3>
+      <button onclick="closeAddHolidayModal()" class="neo-btn" style="padding: 4px 8px;">&times;</button>
+    </div>
+
+    <form onsubmit="submitAddHoliday(event)" style="display: flex; flex-direction: column; gap: 14px;">
+      <div>
+        <label class="neo-label">Holiday Name</label>
+        <input type="text" id="holiday-name" class="neo-input" placeholder="e.g. Foundation Day" required>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div>
+          <label class="neo-label">Date</label>
+          <input type="date" id="holiday-date" class="neo-input" required>
+        </div>
+        <div>
+          <label class="neo-label">Category</label>
+          <select id="holiday-type" class="neo-input">
+            <option value="NATIONAL">National Holiday</option>
+            <option value="COMPANY">Company Holiday</option>
+            <option value="OPTIONAL">Optional / Restricted</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label class="neo-label">Description (Optional)</label>
+        <textarea id="holiday-desc" class="neo-input" rows="2" placeholder="Brief context or observance instructions..."></textarea>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <input type="checkbox" id="holiday-recurring" style="accent-color: var(--primary); width: 16px; height: 16px;">
+        <label for="holiday-recurring" style="font-size: 0.85rem; color: #cbd5e1; cursor: pointer;">
+          Repeats every year on the same date
+        </label>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
+        <button type="button" onclick="closeAddHolidayModal()" class="neo-btn">Cancel</button>
+        <button type="submit" id="submit-holiday-btn" class="neo-btn neo-btn-primary">
+          Save Holiday
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  function openAddHolidayModal() {
+    document.getElementById('add-holiday-modal').style.display = 'flex';
+    feather.replace();
+  }
+  function closeAddHolidayModal() {
+    document.getElementById('add-holiday-modal').style.display = 'none';
+  }
+
+  async function submitAddHoliday(e) {
+    e.preventDefault();
+    const btn = document.getElementById('submit-holiday-btn');
+    btn.disabled = true;
+
+    const payload = {
+      name: document.getElementById('holiday-name').value.trim(),
+      holiday_date: document.getElementById('holiday-date').value,
+      holiday_type: document.getElementById('holiday-type').value,
+      description: document.getElementById('holiday-desc').value.trim() || null,
+      is_recurring: document.getElementById('holiday-recurring').checked
+    };
+
+    try {
+      const res = await fetch('/api/v1/holidays/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Failed to add holiday');
+
+      showToast(`Holiday '${payload.name}' added to calendar!`, 'success');
+      closeAddHolidayModal();
+      setTimeout(() => location.reload(), 800);
+    } catch (err) {
+      showToast(err.message, 'danger');
+      btn.disabled = false;
+    }
+  }
+
+  async function deleteHoliday(id, name) {
+    if (!confirm(`Are you sure you want to remove '${name}' from company holidays?`)) return;
+
+    try {
+      const res = await fetch(`/api/v1/holidays/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Failed to delete');
+
+      showToast(`Holiday '${name}' removed.`, 'success');
+      setTimeout(() => location.reload(), 800);
+    } catch (err) {
+      showToast(err.message, 'danger');
+    }
+  }
+</script>
+{% endblock %}

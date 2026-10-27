@@ -1,0 +1,407 @@
+{% extends "base.html" %}
+
+{% block title %}Shift & Roster Management — FRAS Enterprise{% endblock %}
+
+{% block content %}
+<div style="max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px;">
+
+  <!-- Header -->
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+    <div>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <h1 style="font-family: 'Outfit', sans-serif; font-size: 1.65rem; font-weight: 800; color: #ffffff; letter-spacing: -0.01em;">
+          Enterprise Shift Rostering & Schedules
+        </h1>
+        <span class="role-badge role-admin">
+          WORKFORCE ROSTERING
+        </span>
+      </div>
+      <p style="color: var(--text-muted); font-size: 0.88rem; margin-top: 3px;">
+        Define rotating shift timetables, night shift cross-midnight logic, and assign schedules to departments or staff.
+      </p>
+    </div>
+
+    <!-- Quick Actions -->
+    <div style="display: flex; gap: 10px;">
+      <button onclick="openAssignShiftModal()" class="neo-btn neo-btn-outline">
+        <i data-feather="user-check" style="width: 15px; height: 15px;"></i> Assign Roster
+      </button>
+      <button onclick="openAddShiftModal()" class="neo-btn neo-btn-primary">
+        <i data-feather="plus" style="width: 15px; height: 15px;"></i> Create Shift
+      </button>
+    </div>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="stat-card-grid">
+    <div class="stat-card">
+      <div class="stat-icon-box" style="background: rgba(139, 92, 246, 0.15); color: #a78bfa;">
+        <i data-feather="clock" style="width: 24px; height: 24px;"></i>
+      </div>
+      <div>
+        <div class="stat-label">Total Shifts</div>
+        <div class="stat-value">{{ shifts|length }}</div>
+        <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 2px;">Defined Timetables</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon-box" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa;">
+        <i data-feather="moon" style="width: 24px; height: 24px;"></i>
+      </div>
+      <div>
+        <div class="stat-label">Night Shifts</div>
+        <div class="stat-value" style="color: #60a5fa;">
+          {{ shifts | selectattr('is_night_shift', 'equalto', True) | list | length }}
+        </div>
+        <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 2px;">Cross-Midnight Enabled</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon-box" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">
+        <i data-feather="briefcase" style="width: 24px; height: 24px;"></i>
+      </div>
+      <div>
+        <div class="stat-label">Departments</div>
+        <div class="stat-value">{{ departments|length }}</div>
+        <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 2px;">Operating Units</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon-box" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">
+        <i data-feather="users" style="width: 24px; height: 24px;"></i>
+      </div>
+      <div>
+        <div class="stat-label">Active Staff</div>
+        <div class="stat-value">{{ users|length }}</div>
+        <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 2px;">Rostered Personnel</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Shifts Table -->
+  <div class="neo-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.15rem; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 8px;">
+        <i data-feather="clock" style="width: 17px; height: 17px; color: var(--primary);"></i> Configured Work Shifts
+      </h3>
+    </div>
+
+    <div class="neo-table-wrapper">
+      <table class="neo-table">
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Shift Name</th>
+            <th>Working Hours</th>
+            <th>Grace Period</th>
+            <th>Night Shift</th>
+            <th>Break Duration</th>
+            <th>Status</th>
+            <th style="text-align: right;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in shifts %}
+          <tr>
+            <td style="font-weight: 800; color: #38bdf8;">{{ s.code }}</td>
+            <td style="font-weight: 700; color: #ffffff;">{{ s.name }}</td>
+            <td style="font-weight: 600; font-family: 'Inter', monospace;">
+              {{ s.start_time[:5] }} – {{ s.end_time[:5] }}
+            </td>
+            <td><strong>{{ s.grace_period_mins }}</strong> mins</td>
+            <td>
+              {% if s.is_night_shift %}
+                <span class="neo-badge neo-badge-info" style="display: inline-flex; align-items: center; gap: 4px;">
+                  <i data-feather="moon" style="width: 11px; height: 11px;"></i> Cross-Midnight
+                </span>
+              {% else %}
+                <span style="color: var(--text-muted); font-size: 0.82rem;">Day Shift</span>
+              {% endif %}
+            </td>
+            <td style="font-size: 0.85rem; color: var(--text-muted);">{{ s.break_duration_mins }} mins</td>
+            <td>
+              <span class="status-badge status-ontime">ACTIVE</span>
+            </td>
+            <td style="text-align: right;">
+              <button onclick="openAssignShiftModal({{ s.id }})" class="neo-btn neo-btn-outline" style="padding: 4px 10px; font-size: 0.78rem;">
+                <i data-feather="user-plus" style="width: 13px; height: 13px;"></i> Assign
+              </button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Department Rostering Mapping -->
+  <div class="neo-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+      <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.15rem; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 8px;">
+        <i data-feather="briefcase" style="width: 17px; height: 17px; color: #34d399;"></i> Department Default Shift Assignments
+      </h3>
+    </div>
+    <div class="neo-table-wrapper">
+      <table class="neo-table">
+        <thead>
+          <tr>
+            <th>Department Name</th>
+            <th>Assigned Shift</th>
+            <th>Hours</th>
+            <th>Grace Time</th>
+            <th style="text-align: right;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in departments %}
+          <tr>
+            <td style="font-weight: 700;">{{ d.name }}</td>
+            <td>
+              {% if d.shift %}
+                <span class="neo-badge neo-badge-info">{{ d.shift.name }} ({{ d.shift.code }})</span>
+              {% else %}
+                <span style="color: var(--text-muted);">Legacy ({{ d.shift_start[:5] }} – {{ d.shift_end[:5] }})</span>
+              {% endif %}
+            </td>
+            <td style="font-family: monospace;">
+              {% if d.shift %}
+                {{ d.shift.start_time[:5] }} – {{ d.shift.end_time[:5] }}
+              {% else %}
+                {{ d.shift_start[:5] }} – {{ d.shift_end[:5] }}
+              {% endif %}
+            </td>
+            <td>{{ d.shift.grace_period_mins if d.shift else d.grace_period_mins }} mins</td>
+            <td style="text-align: right;">
+              <button onclick="openAssignDeptShiftModal({{ d.id }}, '{{ d.name }}')" class="neo-btn" style="padding: 4px 10px; font-size: 0.78rem;">
+                Change Shift
+              </button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal 1: Create Shift -->
+<div id="add-shift-modal" class="neo-modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(6px); z-index: 1000; align-items: center; justify-content: center;">
+  <div class="neo-card" style="max-width: 480px; width: 90%; background: #0f172a; border: 1px solid var(--border-subtle); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 8px;">
+        <i data-feather="clock" style="width: 18px; height: 18px; color: var(--primary);"></i> Create Work Shift
+      </h3>
+      <button onclick="closeAddShiftModal()" class="neo-btn" style="padding: 4px 8px;">&times;</button>
+    </div>
+
+    <form onsubmit="submitAddShift(event)" style="display: flex; flex-direction: column; gap: 14px;">
+      <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px;">
+        <div>
+          <label class="neo-label">Shift Name</label>
+          <input type="text" id="shift-name" class="neo-input" placeholder="e.g. Afternoon Roster" required>
+        </div>
+        <div>
+          <label class="neo-label">Code</label>
+          <input type="text" id="shift-code" class="neo-input" placeholder="e.g. AFT" required style="text-transform: uppercase;">
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div>
+          <label class="neo-label">Start Time</label>
+          <input type="time" id="shift-start" class="neo-input" value="09:00" required>
+        </div>
+        <div>
+          <label class="neo-label">End Time</label>
+          <input type="time" id="shift-end" class="neo-input" value="17:00" required>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div>
+          <label class="neo-label">Grace Period (Mins)</label>
+          <input type="number" id="shift-grace" class="neo-input" value="15" min="0" required>
+        </div>
+        <div>
+          <label class="neo-label">Break Duration (Mins)</label>
+          <input type="number" id="shift-break" class="neo-input" value="60" min="0" required>
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <input type="checkbox" id="shift-night" style="accent-color: var(--primary); width: 16px; height: 16px;">
+        <label for="shift-night" style="font-size: 0.85rem; color: #cbd5e1; cursor: pointer;">
+          Night Shift (Crosses midnight, e.g. 10 PM to 6 AM)
+        </label>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
+        <button type="button" onclick="closeAddShiftModal()" class="neo-btn">Cancel</button>
+        <button type="submit" id="submit-shift-btn" class="neo-btn neo-btn-primary">
+          Save Shift
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal 2: Assign Shift -->
+<div id="assign-shift-modal" class="neo-modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(6px); z-index: 1000; align-items: center; justify-content: center;">
+  <div class="neo-card" style="max-width: 480px; width: 90%; background: #0f172a; border: 1px solid var(--border-subtle); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 800; color: #ffffff;">
+        Assign Shift Roster
+      </h3>
+      <button onclick="closeAssignShiftModal()" class="neo-btn" style="padding: 4px 8px;">&times;</button>
+    </div>
+
+    <form onsubmit="submitAssignShift(event)" style="display: flex; flex-direction: column; gap: 14px;">
+      <div>
+        <label class="neo-label">Select Shift Schedule</label>
+        <select id="assign-shift-id" class="neo-input" required>
+          {% for s in shifts %}
+          <option value="{{ s.id }}">{{ s.name }} ({{ s.start_time[:5] }} – {{ s.end_time[:5] }})</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="neo-label">Assignment Target</label>
+        <div style="display: flex; gap: 16px; margin-bottom: 8px;">
+          <label style="display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer;">
+            <input type="radio" name="assign-target" value="employee" checked onchange="toggleAssignTarget()"> Individual Employee
+          </label>
+          <label style="display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer;">
+            <input type="radio" name="assign-target" value="department" onchange="toggleAssignTarget()"> Entire Department
+          </label>
+        </div>
+
+        <div id="target-employee-box">
+          <select id="assign-user-id" class="neo-input">
+            {% for u in users %}
+            <option value="{{ u.id }}">{{ u.full_name }} ({{ u.user_code }}) - {{ u.department.name if u.department else 'General' }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div id="target-dept-box" style="display: none;">
+          <select id="assign-dept-id" class="neo-input">
+            {% for d in departments %}
+            <option value="{{ d.id }}">{{ d.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
+        <button type="button" onclick="closeAssignShiftModal()" class="neo-btn">Cancel</button>
+        <button type="submit" class="neo-btn neo-btn-primary">Confirm Assignment</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  function openAddShiftModal() {
+    document.getElementById('add-shift-modal').style.display = 'flex';
+    feather.replace();
+  }
+  function closeAddShiftModal() {
+    document.getElementById('add-shift-modal').style.display = 'none';
+  }
+
+  function openAssignShiftModal(preselectedShiftId = null) {
+    if (preselectedShiftId) {
+      document.getElementById('assign-shift-id').value = preselectedShiftId;
+    }
+    document.getElementById('assign-shift-modal').style.display = 'flex';
+    feather.replace();
+  }
+  function closeAssignShiftModal() {
+    document.getElementById('assign-shift-modal').style.display = 'none';
+  }
+
+  function openAssignDeptShiftModal(deptId, deptName) {
+    document.querySelector('input[name="assign-target"][value="department"]').checked = true;
+    toggleAssignTarget();
+    document.getElementById('assign-dept-id').value = deptId;
+    document.getElementById('assign-shift-modal').style.display = 'flex';
+  }
+
+  function toggleAssignTarget() {
+    const isDept = document.querySelector('input[name="assign-target"]:checked').value === 'department';
+    document.getElementById('target-employee-box').style.display = isDept ? 'none' : 'block';
+    document.getElementById('target-dept-box').style.display = isDept ? 'block' : 'none';
+  }
+
+  async function submitAddShift(e) {
+    e.preventDefault();
+    const btn = document.getElementById('submit-shift-btn');
+    btn.disabled = true;
+
+    const start = document.getElementById('shift-start').value;
+    const end = document.getElementById('shift-end').value;
+
+    const payload = {
+      name: document.getElementById('shift-name').value.trim(),
+      code: document.getElementById('shift-code').value.trim().toUpperCase(),
+      start_time: start.length === 5 ? start + ':00' : start,
+      end_time: end.length === 5 ? end + ':00' : end,
+      grace_period_mins: parseInt(document.getElementById('shift-grace').value),
+      break_duration_mins: parseInt(document.getElementById('shift-break').value),
+      is_night_shift: document.getElementById('shift-night').checked
+    };
+
+    try {
+      const res = await fetch('/api/v1/shifts/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Failed to create shift');
+
+      showToast(`Shift '${payload.name}' created successfully!`, 'success');
+      closeAddShiftModal();
+      setTimeout(() => location.reload(), 800);
+    } catch (err) {
+      showToast(err.message, 'danger');
+      btn.disabled = false;
+    }
+  }
+
+  async function submitAssignShift(e) {
+    e.preventDefault();
+    const isDept = document.querySelector('input[name="assign-target"]:checked').value === 'department';
+    const shiftId = parseInt(document.getElementById('assign-shift-id').value);
+
+    const payload = {
+      shift_id: shiftId,
+      user_id: isDept ? null : parseInt(document.getElementById('assign-user-id').value),
+      department_id: isDept ? parseInt(document.getElementById('assign-dept-id').value) : null
+    };
+
+    try {
+      const res = await fetch('/api/v1/shifts/assign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Failed to assign shift');
+
+      showToast(data.message || 'Shift assigned successfully!', 'success');
+      closeAssignShiftModal();
+      setTimeout(() => location.reload(), 800);
+    } catch (err) {
+      showToast(err.message, 'danger');
+    }
+  }
+</script>
+{% endblock %}
