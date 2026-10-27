@@ -22,18 +22,29 @@ class VisionEngine:
     _instance: Optional["VisionEngine"] = None
 
     def __init__(self):
-        self._ensure_models_downloaded()
-        logger.info("Loading OpenCV Deep Learning YuNet and SFace models...")
-        self.detector = cv2.FaceDetectorYN.create(
-            str(YUNET_MODEL_PATH),
-            "",
-            (320, 320),
-            score_threshold=FACE_DETECTION_CONFIDENCE,
-            nms_threshold=0.3,
-            top_k=5000,
-        )
-        self.recognizer = cv2.FaceRecognizerSF.create(str(SFACE_MODEL_PATH), "")
-        logger.info("AI Vision Engine successfully initialized!")
+        self.detector = None
+        self.recognizer = None
+        try:
+            self._ensure_models_downloaded()
+            logger.info("Loading OpenCV Deep Learning YuNet and SFace models...")
+            if YUNET_MODEL_PATH.exists() and YUNET_MODEL_PATH.stat().st_size >= 100000:
+                self.detector = cv2.FaceDetectorYN.create(
+                    str(YUNET_MODEL_PATH.resolve()),
+                    "",
+                    (320, 320),
+                    score_threshold=FACE_DETECTION_CONFIDENCE,
+                    nms_threshold=0.3,
+                    top_k=5000,
+                )
+            if SFACE_MODEL_PATH.exists() and SFACE_MODEL_PATH.stat().st_size >= 10000000:
+                self.recognizer = cv2.FaceRecognizerSF.create(str(SFACE_MODEL_PATH.resolve()), "")
+            
+            if self.detector is not None and self.recognizer is not None:
+                logger.info("AI Vision Engine successfully initialized!")
+            else:
+                logger.warning("AI Vision Engine loaded partially. Models will be verified on first scan.")
+        except Exception as e:
+            logger.error("Error loading Vision Engine models: %s", e)
 
     @classmethod
     def get_instance(cls) -> "VisionEngine":
@@ -42,16 +53,22 @@ class VisionEngine:
         return cls._instance
 
     def _ensure_models_downloaded(self):
-        """Download YuNet & SFace ONNX models from OpenCV Zoo if not present."""
-        if not YUNET_MODEL_PATH.exists():
+        """Download YuNet & SFace ONNX models from OpenCV Zoo if not present or incomplete."""
+        if not YUNET_MODEL_PATH.exists() or YUNET_MODEL_PATH.stat().st_size < 100000:
             logger.info("Downloading YuNet Face Detector model to %s...", YUNET_MODEL_PATH)
-            urllib.request.urlretrieve(YUNET_DOWNLOAD_URL, str(YUNET_MODEL_PATH))
-            logger.info("YuNet model download complete.")
+            try:
+                urllib.request.urlretrieve(YUNET_DOWNLOAD_URL, str(YUNET_MODEL_PATH))
+                logger.info("YuNet model download complete.")
+            except Exception as e:
+                logger.error("Could not download YuNet model: %s", e)
 
-        if not SFACE_MODEL_PATH.exists():
+        if not SFACE_MODEL_PATH.exists() or SFACE_MODEL_PATH.stat().st_size < 10000000:
             logger.info("Downloading SFace Face Recognizer model to %s...", SFACE_MODEL_PATH)
-            urllib.request.urlretrieve(SFACE_DOWNLOAD_URL, str(SFACE_MODEL_PATH))
-            logger.info("SFace model download complete.")
+            try:
+                urllib.request.urlretrieve(SFACE_DOWNLOAD_URL, str(SFACE_MODEL_PATH))
+                logger.info("SFace model download complete.")
+            except Exception as e:
+                logger.error("Could not download SFace model: %s", e)
 
     def decode_base64_frame(self, base64_str: str) -> Optional[np.ndarray]:
         """Decode base64 data URL from browser canvas to OpenCV BGR numpy array."""
@@ -111,6 +128,9 @@ class VisionEngine:
         Detect faces in image frame using YuNet.
         Returns array of detected faces with bounding boxes & 5 landmarks.
         """
+        if self.detector is None:
+            logger.warning("Face detector model is not initialized.")
+            return None
         h, w = frame.shape[:2]
         self.detector.setInputSize((w, h))
         _, faces = self.detector.detect(frame)
@@ -120,6 +140,9 @@ class VisionEngine:
         """
         Align face using 5 landmarks and extract 128-d normalized embedding with SFace.
         """
+        if self.recognizer is None:
+            logger.warning("Face recognizer model is not initialized.")
+            return None
         try:
             aligned_face = self.recognizer.alignCrop(frame, face_info)
             feature = self.recognizer.feature(aligned_face)

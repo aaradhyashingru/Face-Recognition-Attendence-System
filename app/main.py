@@ -14,46 +14,73 @@ from app.services.vision_engine import get_vision_engine
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Create tables
+    # 1. Startup: Create tables
     logger.info("Initializing database tables...")
-    Base.metadata.create_all(bind=engine)
-
-    # Ensure schema migrations for columns if running on an existing SQLite/PostgreSQL database
-    from sqlalchemy import text
-    with engine.connect() as conn:
-        for col_sql in [
-            "ALTER TABLE users ADD COLUMN hourly_rate FLOAT DEFAULT 25.0",
-            "ALTER TABLE users ADD COLUMN designation VARCHAR(100) DEFAULT 'Staff'",
-            "ALTER TABLE users ADD COLUMN grace_period_mins INTEGER DEFAULT NULL",
-        ]:
-            try:
-                conn.execute(text(col_sql))
-                conn.commit()
-            except Exception:
-                pass
-
-    # Seed Default Department & Admin
-    db = SessionLocal()
     try:
-        if not db.query(Department).first():
-            default_dept = Department(
-                name="Computer Science & Engineering",
-                shift_start="09:00:00",
-                shift_end="17:00:00",
-                grace_period_mins=15,
-            )
-            db.add(default_dept)
-            db.commit()
-            logger.info("Default Department created: Computer Science & Engineering")
+        Base.metadata.create_all(bind=engine)
+    except Exception as e:
+        logger.error("Database schema creation warning: %s", e)
 
-        seed_default_admin(db)
-    finally:
-        db.close()
+    # 2. Safe schema migrations via table inspection (prevents transaction abort errors)
+    try:
+        from sqlalchemy import text
+        with engine.connect() as conn:
+            try:
+                res = conn.execute(text("PRAGMA table_info(users)"))
+                existing_cols = {row[1] for row in res.fetchall()}
+            except Exception:
+                existing_cols = set()
 
-    # Pre-warm AI Vision Engine (checks/downloads models if needed)
-    logger.info("Pre-warming Vision Engine models...")
-    get_vision_engine()
-    logger.info("FRAS Enterprise Backend successfully loaded!")
+            col_defs = [
+                ("hourly_rate", "ALTER TABLE users ADD COLUMN hourly_rate FLOAT DEFAULT 25.0"),
+                ("designation", "ALTER TABLE users ADD COLUMN designation VARCHAR(100) DEFAULT 'Staff'"),
+                ("grace_period_mins", "ALTER TABLE users ADD COLUMN grace_period_mins INTEGER DEFAULT NULL"),
+            ]
+            for col_name, sql in col_defs:
+                if col_name not in existing_cols:
+                    try:
+                        conn.execute(text(sql))
+                        conn.commit()
+                        logger.info("Added missing database column: %s", col_name)
+                    except Exception as e:
+                        logger.warning("Could not add column %s: %s", col_name, e)
+                        try:
+                            conn.rollback()
+                        except Exception:
+                            pass
+    except Exception as e:
+        logger.warning("Column migration inspection warning: %s", e)
+
+    # 3. Seed Default Department & Admin
+    try:
+        db = SessionLocal()
+        try:
+            if not db.query(Department).first():
+                default_dept = Department(
+                    name="Computer Science & Engineering",
+                    shift_start="09:00:00",
+                    shift_end="17:00:00",
+                    grace_period_mins=15,
+                )
+                db.add(default_dept)
+                db.commit()
+                logger.info("Default Department created: Computer Science & Engineering")
+
+            seed_default_admin(db)
+        finally:
+            db.close()
+    except Exception as e:
+        logger.error("Department or Admin seeding warning: %s", e)
+
+    # 4. Pre-warm AI Vision Engine (checks/downloads models if needed)
+    try:
+        logger.info("Pre-warming Vision Engine models...")
+        get_vision_engine()
+        logger.info("AI Vision Engine successfully loaded!")
+    except Exception as e:
+        logger.error("Vision Engine pre-warming warning: %s (Kiosk will retry on scan)", e)
+
+    logger.info("FRAS Enterprise Backend successfully loaded and ready for requests!")
 
     yield
 

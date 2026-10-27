@@ -36,7 +36,11 @@ logging.basicConfig(
 logger = logging.getLogger("fras")
 
 # Database Configuration
-DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{DATA_DIR / 'attendance.db'}")
+_raw_db = os.getenv("DATABASE_URL", "").strip()
+if not _raw_db or _raw_db in ("sqlite:///data/attendance.db", "sqlite:///attendance.db"):
+    DATABASE_URL = f"sqlite:///{(DATA_DIR / 'attendance.db').resolve().as_posix()}"
+else:
+    DATABASE_URL = _raw_db
 
 # Security & JWT Configuration
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
