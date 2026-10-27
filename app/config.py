@@ -72,18 +72,46 @@ else:
 # Kiosk API Protection (optional)
 KIOSK_API_KEY = os.getenv("KIOSK_API_KEY", "").strip()
 
+# Multi-Stage CNN Vision Pipeline Configuration
+# Stage 1: Face Detection & Alignment ("yunet", "retinaface", "yolo")
+VISION_DETECTOR = os.getenv("VISION_DETECTOR", "yunet").lower()
+# Stage 2: Anti-Spoofing & Liveness ("passive", "minifasnet", "hybrid")
+VISION_LIVENESS = os.getenv("VISION_LIVENESS", "passive").lower()
+# Stage 3: Feature Embedding ("sface", "arcface", "facenet")
+VISION_EMBEDDER = os.getenv("VISION_EMBEDDER", "sface").lower()
+
 # Deep Learning Model Paths & URLs
 YUNET_MODEL_NAME = "face_detection_yunet_2023mar.onnx"
 SFACE_MODEL_NAME = "face_recognition_sface_2021dec.onnx"
+RETINAFACE_MODEL_NAME = "face_detection_retinaface_2023mar.onnx"
+ARCFACE_MODEL_NAME = "face_recognition_arcface_2021dec.onnx"
+FACENET_MODEL_NAME = "facenet_128d.onnx"
+MINIFASNET_MODEL_NAME = "minifasnet_2.7_80x80.onnx"
 
 YUNET_MODEL_PATH = MODELS_DIR / YUNET_MODEL_NAME
 SFACE_MODEL_PATH = MODELS_DIR / SFACE_MODEL_NAME
+RETINAFACE_MODEL_PATH = MODELS_DIR / RETINAFACE_MODEL_NAME
+ARCFACE_MODEL_PATH = MODELS_DIR / ARCFACE_MODEL_NAME
+FACENET_MODEL_PATH = MODELS_DIR / FACENET_MODEL_NAME
+MINIFASNET_MODEL_PATH = MODELS_DIR / MINIFASNET_MODEL_NAME
 
 YUNET_DOWNLOAD_URL = (
     "https://github.com/opencv/opencv_zoo/raw/main/models/face_detection_yunet/face_detection_yunet_2023mar.onnx"
 )
 SFACE_DOWNLOAD_URL = (
     "https://github.com/opencv/opencv_zoo/raw/main/models/face_recognition_sface/face_recognition_sface_2021dec.onnx"
+)
+RETINAFACE_DOWNLOAD_URL = (
+    "https://github.com/opencv/opencv_zoo/raw/main/models/face_detection_retinaface/face_detection_retinaface_2023mar.onnx"
+)
+ARCFACE_DOWNLOAD_URL = (
+    "https://github.com/opencv/opencv_zoo/raw/main/models/face_recognition_arcface/face_recognition_arcface_2021dec.onnx"
+)
+FACENET_DOWNLOAD_URL = (
+    "https://github.com/opencv/opencv_zoo/raw/main/models/face_recognition_sface/face_recognition_sface_2021dec.onnx"
+)
+MINIFASNET_DOWNLOAD_URL = (
+    "https://github.com/opencv/opencv_zoo/raw/main/models/silent_face_anti_spoofing/minifasnet.onnx"
 )
 
 # AI Recognition Thresholds
