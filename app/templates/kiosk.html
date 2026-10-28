@@ -5,30 +5,57 @@
 {% block content %}
 <div class="kiosk-container">
 
-  <!-- Minimalist Kiosk Header Bar -->
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+  <!-- Minimalist Kiosk Header Bar with Operator Controls -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 12px;">
     <div>
       <div style="display: flex; align-items: center; gap: 10px;">
         <h1 style="font-family: 'Outfit', sans-serif; font-size: 1.6rem; font-weight: 800; color: #ffffff; letter-spacing: -0.01em;">
-          Live Biometric Check-In
+          Biometric Attendance Kiosk
         </h1>
         <span class="neo-badge neo-badge-success" style="font-size: 0.7rem; padding: 3px 10px;">
-          <span class="radar-pulse-dot" style="width: 6px; height: 6px;"></span> KIOSK ACTIVE
+          <span class="radar-pulse-dot" style="width: 6px; height: 6px;"></span> LIVE SCANNING
         </span>
       </div>
       <p style="color: var(--text-muted); font-size: 0.88rem; margin-top: 2px;">
-        Align your face within the scanning reticle. Anti-spoofing and deep metric recognition trigger automatically.
+        Position your face inside the reticle. Real-time anti-spoofing and deep metric matching trigger automatically.
       </p>
     </div>
 
-    <!-- Quick Kiosk Actions -->
-    <div style="display: flex; gap: 8px;">
-      <button id="btn-audio-toggle" onclick="toggleAudio()" class="neo-btn" title="Toggle Voice Feedback">
-        <i data-feather="volume-2" id="audio-icon" style="width: 15px; height: 15px;"></i> Voice Enabled
+    <!-- Operator Quick Control Toolbar -->
+    <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+      <!-- Camera Refresh Button -->
+      <button onclick="reconnectCamera()" class="neo-btn" style="padding: 7px 12px; font-size: 0.82rem;" title="Restart camera stream">
+        <i data-feather="refresh-cw" id="cam-refresh-icon" style="width: 14px; height: 14px;"></i> Reconnect Cam
       </button>
-      <button onclick="toggleFullscreen()" class="neo-btn neo-btn-outline" title="Fullscreen Kiosk Mode">
-        <i data-feather="maximize" style="width: 15px; height: 15px;"></i> Fullscreen
+
+      <!-- Audio Voice Toggle -->
+      <button id="btn-audio-toggle" onclick="toggleAudio()" class="neo-btn" style="padding: 7px 12px; font-size: 0.82rem;" title="Toggle Speech Announcements (HotKey: V)">
+        <i data-feather="volume-2" id="audio-icon" style="width: 14px; height: 14px;"></i> Voice Enabled
       </button>
+
+      <!-- Fullscreen Toggle -->
+      <button onclick="toggleFullscreen()" class="neo-btn neo-btn-primary" style="padding: 7px 14px; font-size: 0.82rem;" title="Fullscreen Terminal Mode (HotKey: F)">
+        <i data-feather="maximize" style="width: 14px; height: 14px;"></i> Fullscreen [F]
+      </button>
+    </div>
+  </div>
+
+  <!-- Operator Step Guidance Ribbon -->
+  <div class="status-strip" style="padding: 10px 18px; margin-bottom: 4px;">
+    <div style="display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: #cbd5e1;">
+      <span class="guide-step-badge" style="width: 20px; height: 20px; font-size: 0.7rem; margin-bottom: 0;">1</span>
+      <span><b>Center Face:</b> Stand 1-2 ft away</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: #cbd5e1;">
+      <span class="guide-step-badge" style="width: 20px; height: 20px; font-size: 0.7rem; margin-bottom: 0; background: #6366f1;">2</span>
+      <span><b>Look Directly:</b> Align in reticle</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: #cbd5e1;">
+      <span class="guide-step-badge" style="width: 20px; height: 20px; font-size: 0.7rem; margin-bottom: 0; background: #10b981;">3</span>
+      <span><b>Green Frame:</b> Punch confirmed</span>
+    </div>
+    <div style="font-size: 0.78rem; color: var(--text-muted);">
+      Press <span class="shortcut-pill">?</span> for Operator Help
     </div>
   </div>
 
@@ -135,9 +162,15 @@
         <span id="live-count-badge" class="neo-badge neo-badge-info" style="font-size: 0.7rem;">0 RECORDED</span>
       </div>
 
-      <!-- Quick Search Filter in Kiosk Table -->
-      <div style="display: flex; align-items: center; gap: 8px;">
-        <input type="text" id="kiosk-feed-search" oninput="filterTodayFeed()" placeholder="Search today's punches..." class="neo-input" style="width: 240px; padding: 6px 12px; font-size: 0.82rem;">
+      <!-- Quick Search & Type Filter Pills in Kiosk Table -->
+      <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <div class="preset-pills-group">
+          <button type="button" class="preset-pill active" id="pill-filter-all" onclick="setFeedFilter('ALL')">All</button>
+          <button type="button" class="preset-pill" id="pill-filter-in" onclick="setFeedFilter('IN')">Check-Ins</button>
+          <button type="button" class="preset-pill" id="pill-filter-out" onclick="setFeedFilter('OUT')">Check-Outs</button>
+          <button type="button" class="preset-pill" id="pill-filter-late" onclick="setFeedFilter('LATE')">Late</button>
+        </div>
+        <input type="text" id="kiosk-feed-search" oninput="filterTodayFeed()" placeholder="Search today's punches..." class="neo-input" style="width: 220px; padding: 6px 12px; font-size: 0.82rem;">
       </div>
     </div>
 
@@ -415,28 +448,60 @@
     }
   }
 
+  let currentTypeFilter = 'ALL';
+
+  // Reconnect Camera Stream
+  async function reconnectCamera() {
+    const icon = document.getElementById('cam-refresh-icon');
+    if (icon) icon.style.animation = 'spin 1s linear infinite';
+    if (videoEl.srcObject) {
+      videoEl.srcObject.getTracks().forEach(t => t.stop());
+    }
+    showToast('Reconnecting camera stream...', 'info');
+    await initCamera();
+    if (icon) icon.style.animation = 'none';
+    showToast('Camera stream reconnected', 'success');
+  }
+
   // Load Feed
   async function loadTodayFeed() {
     try {
       const res = await fetch('/api/v1/attendance/today');
       allTodayLogs = await res.json();
-      renderTodayFeed(allTodayLogs);
+      filterTodayFeed();
     } catch (e) {
       console.error('Feed error:', e);
     }
   }
 
+  function setFeedFilter(filter) {
+    currentTypeFilter = filter;
+    ['all', 'in', 'out', 'late'].forEach(f => {
+      const pill = document.getElementById(`pill-filter-${f}`);
+      if (pill) pill.classList.toggle('active', f.toUpperCase() === filter);
+    });
+    filterTodayFeed();
+  }
+
   function filterTodayFeed() {
     const q = document.getElementById('kiosk-feed-search').value.toLowerCase().trim();
-    if (!q) {
-      renderTodayFeed(allTodayLogs);
-      return;
+    let filtered = allTodayLogs;
+
+    if (currentTypeFilter === 'IN') {
+      filtered = filtered.filter(l => l.punch_type === 'IN');
+    } else if (currentTypeFilter === 'OUT') {
+      filtered = filtered.filter(l => l.punch_type === 'OUT');
+    } else if (currentTypeFilter === 'LATE') {
+      filtered = filtered.filter(l => l.status === 'LATE');
     }
-    const filtered = allTodayLogs.filter(l => 
-      (l.full_name && l.full_name.toLowerCase().includes(q)) ||
-      (l.user_code && l.user_code.toLowerCase().includes(q)) ||
-      (l.department_name && l.department_name.toLowerCase().includes(q))
-    );
+
+    if (q) {
+      filtered = filtered.filter(l => 
+        (l.full_name && l.full_name.toLowerCase().includes(q)) ||
+        (l.user_code && l.user_code.toLowerCase().includes(q)) ||
+        (l.department_name && l.department_name.toLowerCase().includes(q))
+      );
+    }
     renderTodayFeed(filtered);
   }
 
@@ -479,6 +544,16 @@
       `;
     }).join('');
   }
+
+  // Kiosk Hotkeys
+  window.addEventListener('keydown', (e) => {
+    if (['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+    if (e.key === 'f' || e.key === 'F') {
+      toggleFullscreen();
+    } else if (e.key === 'v' || e.key === 'V') {
+      toggleAudio();
+    }
+  });
 
   // Initialize
   window.addEventListener('DOMContentLoaded', initCamera);

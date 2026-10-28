@@ -3,9 +3,9 @@
 {% block title %}Admin Dashboard — FRAS Enterprise{% endblock %}
 
 {% block content %}
-<div style="max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px;">
+<div style="max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px;">
 
-  <!-- Minimalist Executive Header -->
+  <!-- Executive Header with Live Operator Assistance -->
   <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
     <div>
       <div style="display: flex; align-items: center; gap: 10px;">
@@ -13,28 +13,122 @@
           Workforce Operations & Tracking
         </h1>
         <span class="role-badge {% if current_user.role == 'SUPER_ADMIN' %}role-super{% elif current_user.role == 'HR_MANAGER' %}role-hr{% else %}role-admin{% endif %}">
-          {{ current_user.role }} PRIVILEGES
+          {{ current_user.role }}
         </span>
       </div>
       <p style="color: var(--text-muted); font-size: 0.88rem; margin-top: 3px;">
-        Real-time facial verification analytics, attendance tracking, and workforce payroll overview.
+        Live biometric verification feed, workforce punctuality analytics, and payroll summaries.
       </p>
     </div>
 
     <!-- Quick Action Bar -->
-    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-      <button onclick="openManualPunchModal()" class="neo-btn neo-btn-outline" title="Record manual punch override">
-        <i data-feather="edit-3" style="width: 15px; height: 15px;"></i> Manual Punch
+    <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+      <button onclick="openManualPunchModal()" class="neo-btn neo-btn-outline" title="Record manual punch or fix missed time">
+        <i data-feather="edit-3" style="width: 14px; height: 14px;"></i> Manual Punch
       </button>
-      <a href="/admin/payroll" class="neo-btn" style="background: rgba(99, 102, 241, 0.15); border-color: rgba(99, 102, 241, 0.35); color: #c7d2fe;">
-        <i data-feather="dollar-sign" style="width: 15px; height: 15px;"></i> Payroll Manager
+      <a href="/api/v1/attendance/export/excel" class="neo-btn neo-btn-success" title="Download spreadsheet of today's attendance">
+        <i data-feather="download" style="width: 14px; height: 14px;"></i> Export Excel
       </a>
-      <a href="/api/v1/attendance/export/excel" class="neo-btn neo-btn-success">
-        <i data-feather="download" style="width: 15px; height: 15px;"></i> Export Excel
+      <a href="/kiosk" class="neo-btn neo-btn-primary" style="box-shadow: 0 4px 16px var(--primary-glow);">
+        <i data-feather="video" style="width: 14px; height: 14px;"></i> Launch Kiosk
       </a>
-      <a href="/kiosk" class="neo-btn neo-btn-primary">
-        <i data-feather="external-link" style="width: 15px; height: 15px;"></i> Open Kiosk
-      </a>
+    </div>
+  </div>
+
+  <!-- OPERATOR LAUNCHPAD: 4 Core Operator Actions -->
+  <div class="operator-launchpad">
+    
+    <!-- 1. Launch Kiosk -->
+    <a href="/kiosk" class="operator-card" style="border-left: 4px solid var(--primary);">
+      <div class="operator-card-icon" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa;">
+        <i data-feather="video" style="width: 24px; height: 24px;"></i>
+      </div>
+      <div>
+        <div class="operator-card-title">
+          <span>Attendance Kiosk</span>
+          <span class="neo-badge neo-badge-success" style="font-size: 0.65rem; padding: 2px 7px;">LIVE</span>
+        </div>
+        <div class="operator-card-desc">
+          Launch touchless camera terminal for employee face check-in & check-out.
+        </div>
+      </div>
+    </a>
+
+    <!-- 2. Enroll New Employee -->
+    <a href="/admin/users" class="operator-card" style="border-left: 4px solid #10b981;">
+      <div class="operator-card-icon" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">
+        <i data-feather="user-plus" style="width: 24px; height: 24px;"></i>
+      </div>
+      <div>
+        <div class="operator-card-title">
+          <span>Enroll Employee</span>
+        </div>
+        <div class="operator-card-desc">
+          Register new personnel, capture 5-frame face embedding, and assign grace window.
+        </div>
+      </div>
+    </a>
+
+    <!-- 3. Manual Attendance Correction -->
+    <div onclick="openManualPunchModal()" class="operator-card" style="border-left: 4px solid #f59e0b;">
+      <div class="operator-card-icon" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">
+        <i data-feather="edit-3" style="width: 24px; height: 24px;"></i>
+      </div>
+      <div>
+        <div class="operator-card-title">
+          <span>Manual Punch</span>
+        </div>
+        <div class="operator-card-desc">
+          Fix missed employee punches, log outdoor duty, or mark excused absences.
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Pending Requests & Approvals -->
+    <a href="/admin/leaves" class="operator-card" style="border-left: 4px solid #8b5cf6;">
+      <div class="operator-card-icon" style="background: rgba(139, 92, 246, 0.15); color: #a78bfa;">
+        <i data-feather="check-square" style="width: 24px; height: 24px;"></i>
+      </div>
+      <div>
+        <div class="operator-card-title">
+          <span>Approvals & Leaves</span>
+          {% if pending_leaves_count > 0 or pending_reg_count > 0 %}
+          <span class="neo-badge neo-badge-warning" style="font-size: 0.65rem; padding: 2px 7px;">
+            {{ pending_leaves_count + pending_reg_count }} PENDING
+          </span>
+          {% endif %}
+        </div>
+        <div class="operator-card-desc">
+          Review {{ pending_leaves_count }} leave applications and {{ pending_reg_count }} attendance regularizations.
+        </div>
+      </div>
+    </a>
+
+  </div>
+
+  <!-- Operational Engine & System Status Strip -->
+  <div class="status-strip">
+    <div class="status-strip-item">
+      <span class="status-indicator"></span>
+      <span style="color: var(--text-muted);">Biometric Engine:</span>
+      <span style="font-weight: 700; color: #ffffff;">YuNet Detection & SFace Embeddings</span>
+    </div>
+    <div class="status-strip-item">
+      <span class="status-indicator"></span>
+      <span style="color: var(--text-muted);">Anti-Spoofing:</span>
+      <span style="font-weight: 700; color: #34d399;">MiniFASNet Active</span>
+    </div>
+    <div class="status-strip-item">
+      <i data-feather="clock" style="width: 14px; height: 14px; color: #60a5fa;"></i>
+      <span style="color: var(--text-muted);">Rostering:</span>
+      <span style="font-weight: 700; color: #ffffff;">{{ total_shifts_count }} Active Shifts</span>
+    </div>
+    <div class="status-strip-item">
+      <i data-feather="sun" style="width: 14px; height: 14px; color: #fbbf24;"></i>
+      <span style="color: var(--text-muted);">Next Holiday:</span>
+      <span style="font-weight: 700; color: #ffffff;">
+        {% if upcoming_holiday %}{{ upcoming_holiday.name }} ({{ upcoming_holiday.holiday_date.strftime('%b %d') }}){% else %}None Scheduled{% endif %}
+      </span>
     </div>
   </div>
 
@@ -49,7 +143,7 @@
       <div>
         <div class="stat-label">Total Workforce</div>
         <div class="stat-value">{{ total_users }}</div>
-        <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 2px;">Enrolled Profiles</div>
+        <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 2px;">Enrolled Active Profiles</div>
       </div>
     </div>
 
@@ -88,79 +182,6 @@
         <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 2px;">{{ payroll_summary.total_hours }} Tracked Hours</div>
       </div>
     </div>
-
-  </div>
-
-  <!-- Enterprise Workforce Operations Quick Access -->
-  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
-    
-    <!-- Pending Leaves Card -->
-    <a href="/admin/leaves" class="neo-card" style="text-decoration: none; display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; transition: transform 0.2s ease, border-color 0.2s ease; border-left: 4px solid #f59e0b;">
-      <div style="display: flex; align-items: center; gap: 14px;">
-        <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(245, 158, 11, 0.15); color: #fbbf24; display: flex; align-items: center; justify-content: center;">
-          <i data-feather="calendar" style="width: 20px; height: 20px;"></i>
-        </div>
-        <div>
-          <div style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 700;">Leave Requests</div>
-          <div style="font-size: 1.25rem; font-weight: 800; color: #ffffff; margin-top: 2px;">
-            {{ pending_leaves_count }} Pending
-          </div>
-        </div>
-      </div>
-      <i data-feather="chevron-right" style="width: 18px; height: 18px; color: var(--text-muted);"></i>
-    </a>
-
-    <!-- Attendance Regularization -->
-    <a href="/admin/leaves" class="neo-card" style="text-decoration: none; display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; transition: transform 0.2s ease, border-color 0.2s ease; border-left: 4px solid #3b82f6;">
-      <div style="display: flex; align-items: center; gap: 14px;">
-        <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(59, 130, 246, 0.15); color: #60a5fa; display: flex; align-items: center; justify-content: center;">
-          <i data-feather="check-square" style="width: 20px; height: 20px;"></i>
-        </div>
-        <div>
-          <div style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 700;">Regularizations</div>
-          <div style="font-size: 1.25rem; font-weight: 800; color: #ffffff; margin-top: 2px;">
-            {{ pending_reg_count }} Pending
-          </div>
-        </div>
-      </div>
-      <i data-feather="chevron-right" style="width: 18px; height: 18px; color: var(--text-muted);"></i>
-    </a>
-
-    <!-- Upcoming Holiday -->
-    <a href="/admin/holidays" class="neo-card" style="text-decoration: none; display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; transition: transform 0.2s ease, border-color 0.2s ease; border-left: 4px solid #10b981;">
-      <div style="display: flex; align-items: center; gap: 14px;">
-        <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(16, 185, 129, 0.15); color: #34d399; display: flex; align-items: center; justify-content: center;">
-          <i data-feather="sun" style="width: 20px; height: 20px;"></i>
-        </div>
-        <div>
-          <div style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 700;">Next Holiday</div>
-          <div style="font-size: 0.95rem; font-weight: 700; color: #ffffff; margin-top: 2px;">
-            {% if upcoming_holiday %}
-              {{ upcoming_holiday.name }} ({{ upcoming_holiday.holiday_date.strftime('%b %d') }})
-            {% else %}
-              None Scheduled
-            {% endif %}
-          </div>
-        </div>
-      </div>
-      <i data-feather="chevron-right" style="width: 18px; height: 18px; color: var(--text-muted);"></i>
-    </a>
-
-    <!-- Shifts & Rostering -->
-    <a href="/admin/shifts" class="neo-card" style="text-decoration: none; display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; transition: transform 0.2s ease, border-color 0.2s ease; border-left: 4px solid #8b5cf6;">
-      <div style="display: flex; align-items: center; gap: 14px;">
-        <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(139, 92, 246, 0.15); color: #a78bfa; display: flex; align-items: center; justify-content: center;">
-          <i data-feather="clock" style="width: 20px; height: 20px;"></i>
-        </div>
-        <div>
-          <div style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 700;">Shift Rosters</div>
-          <div style="font-size: 1.25rem; font-weight: 800; color: #ffffff; margin-top: 2px;">
-            {{ total_shifts_count }} Active Shifts
-          </div>
-        </div>
-      </div>
-      <i data-feather="chevron-right" style="width: 18px; height: 18px; color: var(--text-muted);"></i>
-    </a>
 
   </div>
 
@@ -310,6 +331,25 @@
       </button>
     </div>
 
+    <!-- Operator Helper Banner -->
+    <div class="neo-card-inset" style="padding: 10px 14px; border-radius: var(--radius-sm); margin-bottom: 14px; font-size: 0.78rem; color: var(--text-muted); display: flex; align-items: center; gap: 8px;">
+      <i data-feather="info" style="width: 14px; height: 14px; color: #60a5fa; flex-shrink: 0;"></i>
+      <span>Use this to fix missed punches, mark authorized outdoor work, or credit a full shift.</span>
+    </div>
+
+    <!-- Quick 1-Click Presets -->
+    <div style="display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap;">
+      <button type="button" onclick="applyPunchPreset('IN')" class="preset-pill" style="display: inline-flex; align-items: center; gap: 4px;">
+        <i data-feather="log-in" style="width: 11px; height: 11px; color: #38bdf8;"></i> Punch In (Now)
+      </button>
+      <button type="button" onclick="applyPunchPreset('OUT')" class="preset-pill" style="display: inline-flex; align-items: center; gap: 4px;">
+        <i data-feather="log-out" style="width: 11px; height: 11px; color: #fbbf24;"></i> Punch Out (Now)
+      </button>
+      <button type="button" onclick="applyPunchPreset('BOTH')" class="preset-pill" style="display: inline-flex; align-items: center; gap: 4px;">
+        <i data-feather="check-circle" style="width: 11px; height: 11px; color: #34d399;"></i> Full 8h Shift (Today)
+      </button>
+    </div>
+
     <form id="manual-punch-form" onsubmit="submitManualPunch(event)" style="display: flex; flex-direction: column; gap: 16px;">
       <div>
         <label style="display: block; font-size: 0.78rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px;">
@@ -403,6 +443,40 @@
   function setCurrentDateTime(inputId) {
     const now = new Date();
     document.getElementById(inputId).value = formatDateTimeLocal(now);
+  }
+
+  function applyPunchPreset(preset) {
+    const typeSelect = document.getElementById('manual-punch-type');
+    const statusSelect = document.getElementById('manual-status');
+    const notesInput = document.getElementById('manual-notes');
+    const now = new Date();
+
+    if (preset === 'IN') {
+      typeSelect.value = 'IN';
+      statusSelect.value = 'ON_TIME';
+      handlePunchTypeChange('IN');
+      document.getElementById('manual-datetime').value = formatDateTimeLocal(now);
+      notesInput.value = 'Operator quick punch-in';
+    } else if (preset === 'OUT') {
+      typeSelect.value = 'OUT';
+      handlePunchTypeChange('OUT');
+      document.getElementById('manual-datetime').value = formatDateTimeLocal(now);
+      notesInput.value = 'Operator quick punch-out';
+    } else if (preset === 'BOTH') {
+      typeSelect.value = 'BOTH';
+      statusSelect.value = 'ON_TIME';
+      handlePunchTypeChange('BOTH');
+      
+      // Default to 9:00 AM today and 5:00 PM today
+      const startToday = new Date();
+      startToday.setHours(9, 0, 0, 0);
+      const endToday = new Date();
+      endToday.setHours(17, 0, 0, 0);
+
+      document.getElementById('manual-datetime').value = formatDateTimeLocal(startToday);
+      document.getElementById('manual-out-datetime').value = formatDateTimeLocal(endToday);
+      notesInput.value = 'Regularized full day shift (09:00 - 17:00)';
+    }
   }
 
   function setShiftEndTime() {

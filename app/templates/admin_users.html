@@ -26,13 +26,33 @@
     </button>
   </div>
 
-  <!-- Users Table Card -->
+  <!-- Users Table Card with Fast Search & Filters -->
   <div class="neo-card">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
-      <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.15rem; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 8px;">
-        <i data-feather="user-check" style="width: 17px; height: 17px; color: var(--primary);"></i> Enrolled Personnel
-      </h3>
-      <span class="neo-badge neo-badge-info" style="font-size: 0.7rem;">{{ users|length }} REGISTERED</span>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+      <div>
+        <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.15rem; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 8px;">
+          <i data-feather="user-check" style="width: 17px; height: 17px; color: var(--primary);"></i> Enrolled Personnel
+        </h3>
+        <span id="user-count-badge" class="neo-badge neo-badge-info" style="font-size: 0.7rem; margin-top: 4px;">{{ users|length }} REGISTERED</span>
+      </div>
+
+      <!-- Quick Search & Department Filters -->
+      <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <div class="preset-pills-group">
+          <button type="button" class="preset-pill active" id="user-filter-all" onclick="setUserStatusFilter('all')">All</button>
+          <button type="button" class="preset-pill" id="user-filter-enrolled" onclick="setUserStatusFilter('enrolled')">Face Enrolled</button>
+          <button type="button" class="preset-pill" id="user-filter-pending" onclick="setUserStatusFilter('pending')">Needs Photo</button>
+        </div>
+
+        <select id="user-dept-filter" onchange="filterUserRows()" class="neo-select" style="width: 160px; padding: 6px 12px; font-size: 0.82rem;">
+          <option value="">All Departments</option>
+          {% for d in departments %}
+          <option value="{{ d.id }}">{{ d.name }}</option>
+          {% endfor %}
+        </select>
+
+        <input type="text" id="user-search-input" oninput="filterUserRows()" placeholder="Search by name, code, email..." class="neo-input" style="width: 240px; padding: 6px 12px; font-size: 0.82rem;">
+      </div>
     </div>
 
     <div class="neo-table-wrapper">
@@ -52,7 +72,11 @@
         <tbody id="users-table-body">
           {% if users %}
             {% for u in users %}
-            <tr id="user-row-{{ u.id }}">
+            <tr id="user-row-{{ u.id }}" 
+                class="user-table-row" 
+                data-search="{{ u.user_code|lower }} {{ u.full_name|lower }} {{ (u.email or '')|lower }} {{ (u.designation or '')|lower }} {{ (u.department.name if u.department else '')|lower }}"
+                data-dept="{{ u.department_id or '' }}"
+                data-enrolled="{% if u.embeddings and u.embeddings|length > 0 %}enrolled{% else %}pending{% endif %}">
               <td><b style="font-family: monospace; color: #93c5fd;">{{ u.user_code }}</b></td>
               <td>
                 <div style="font-weight: 700; color: #ffffff;">{{ u.full_name }}</div>
@@ -318,6 +342,46 @@
 
 {% block extra_scripts %}
 <script>
+  let currentUserFilterStatus = 'all';
+
+  function setUserStatusFilter(status) {
+    currentUserFilterStatus = status;
+    ['all', 'enrolled', 'pending'].forEach(s => {
+      const pill = document.getElementById(`user-filter-${s}`);
+      if (pill) pill.classList.toggle('active', s === status);
+    });
+    filterUserRows();
+  }
+
+  function filterUserRows() {
+    const q = (document.getElementById('user-search-input')?.value || '').toLowerCase().trim();
+    const deptId = document.getElementById('user-dept-filter')?.value || '';
+    const rows = document.querySelectorAll('.user-table-row');
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+      const searchData = row.getAttribute('data-search') || '';
+      const rowDept = row.getAttribute('data-dept') || '';
+      const rowStatus = row.getAttribute('data-enrolled') || '';
+
+      const matchesQuery = !q || searchData.includes(q);
+      const matchesDept = !deptId || rowDept === deptId;
+      const matchesStatus = currentUserFilterStatus === 'all' || rowStatus === currentUserFilterStatus;
+
+      if (matchesQuery && matchesDept && matchesStatus) {
+        row.style.display = '';
+        visibleCount++;
+      } else {
+        row.style.display = 'none';
+      }
+    });
+
+    const badge = document.getElementById('user-count-badge');
+    if (badge) {
+      badge.textContent = `${visibleCount} SHOWN`;
+    }
+  }
+
   let modalStream = null;
   const modalVideo = document.getElementById('modal-video');
   const modalCanvas = document.getElementById('modal-canvas');
@@ -499,9 +563,18 @@
       showToast(data.message, 'success');
       const row = document.getElementById(`user-row-${userId}`);
       if (row) row.remove();
+      filterUserRows();
     } catch (err) {
       showToast(err.message, 'danger');
     }
   }
+
+  // Auto-open enroll modal if requested via URL
+  window.addEventListener('DOMContentLoaded', () => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('action') === 'enroll') {
+      openEnrollModal();
+    }
+  });
 </script>
 {% endblock %}
