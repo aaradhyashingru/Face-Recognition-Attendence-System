@@ -106,6 +106,24 @@ class TestBugFixes(unittest.TestCase):
         self.assertFalse(is_overlapping(date(2026, 6, 1), date(2026, 6, 4)))  # before
         self.assertFalse(is_overlapping(date(2026, 6, 11), date(2026, 6, 15))) # after
 
+    def test_cross_midnight_cooldown_fallback_simulation(self):
+        """Test fallback when last punch occurred before midnight."""
+        now = datetime(2026, 10, 28, 0, 0, 15)
+        today_start = datetime(2026, 10, 28, 0, 0, 0)
+        logs = [
+            {"id": 1, "timestamp": datetime(2026, 10, 27, 23, 59, 50)},
+        ]
+        # Query for today:
+        today_logs = [l for l in logs if l["timestamp"] >= today_start]
+        latest = today_logs[-1] if today_logs else None
+        self.assertIsNone(latest)
+
+        # Fallback to absolute latest regardless of date:
+        if not latest and logs:
+            latest = sorted(logs, key=lambda x: x["timestamp"], reverse=True)[0]
+        self.assertIsNotNone(latest)
+        self.assertEqual(latest["id"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()

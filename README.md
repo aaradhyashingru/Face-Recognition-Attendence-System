@@ -28,30 +28,105 @@ A high-accuracy, real-time biometric attendance and workforce payroll system pow
 
 ---
 
-## 🏗️ Architecture
+## 🏗️ Architecture & Project File Structure
+
+### System Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                       Client Layer                          │
-│  • Modern Browser Webcam (MediaDevices API / Canvas)        │
-│  • Web Speech TTS & Web Audio Synthesizer                   │
-│  • Dark Neomorphism UI (Outfit / Inter / Feather Icons)     │
-└──────────────────────────────▲──────────────────────────────┘
-                               │ HTTP / JSON / Base64 frames
-┌──────────────────────────────▼──────────────────────────────┐
-│                    FastAPI Web Application                  │
-│  • Routers: auth, attendance, users, web (Jinja2)           │
-│  • Security: PBKDF2-HMAC-SHA256, PyJWT (HTTP-only cookies)  │
-│  • In-Memory Cache: EmbeddingCache & AttendanceEngine       │
-└───────────────────────┬──────────────┬──────────────────────┘
-                        │              │
-         ┌──────────────▼───┐      ┌───▼─────────────────────┐
-         │ AI Vision Engine │      │   Database Layer        │
-         │ • YuNet ONNX     │      │ • SQLAlchemy 2.0 ORM    │
-         │ • SFace ONNX     │      │ • SQLite (WAL Mode) or  │
-         │ • Passive Liveness      │   PostgreSQL            │
-         │ • Cosine Sim     │      │ • attendance.db         │
-         └──────────────────┘      └─────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────┐
+│                        Client Presentation Layer                       │
+│  • Modern Browser Webcam (MediaDevices API / 450ms Canvas polling)     │
+│  • Web Speech Synthesis (TTS voice prompt) & Web Audio chime           │
+│  • Frosted Glassmorphism Theme (Backdrop-filter blur, Specular border) │
+│  • Operator Launchpad & On-Screen Hotkey Reference Guide (<kbd>?</kbd>)│
+└───────────────────────────────────▲────────────────────────────────────┘
+                                    │ HTTP / JSON / Base64 frames
+┌───────────────────────────────────▼────────────────────────────────────┐
+│                    FastAPI Enterprise Backend Layer                    │
+│  • Routers: auth, attendance, users, leaves, shifts, holidays, web     │
+│  • Security: PBKDF2-HMAC-SHA256 (100k rounds), PyJWT HTTP-only cookie │
+│  • In-Memory Biometric RAM Cache: Instant 128-d cosine comparisons     │
+│  • Transaction Safety: Automatic rollbacks, idempotent error recovery  │
+└───────────────────────────┬───────────────────────┬────────────────────┘
+                            │                       │
+             ┌──────────────▼───┐       ┌───────────▼──────────────────┐
+             │ AI Vision Engine │       │       Database Layer         │
+             │ • YuNet ONNX     │       │ • SQLAlchemy 2.0 ORM         │
+             │ • SFace ONNX     │       │ • SQLite (Safe DELETE mode)  │
+             │ • Texture Liveness       │   or PostgreSQL / MySQL      │
+             │ • Cosine Matcher │       │ • Automatic PRAGMA migration │
+             └──────────────────┘       └──────────────────────────────┘
+```
+
+### 📁 Clean Project Directory Structure
+
+```text
+Face Recognition Based Attendance System/
+├── app/                                 # Main Backend & Frontend Application Package
+│   ├── __init__.py                      # Package indicator
+│   ├── auth.py                          # PBKDF2-HMAC-SHA256 & JWT Cookie Authentication
+│   ├── config.py                        # Centralized Settings & Environment Paths
+│   ├── database.py                      # SQLAlchemy Engine, SessionLocal, PRAGMA journal_mode=DELETE
+│   ├── main.py                          # FastAPI Lifespan, CORS, Static Files, Auto-Migrations
+│   ├── models.py                        # Relational Database Schema (SQLAlchemy ORM)
+│   ├── schemas.py                       # Request/Response Validation Models (Pydantic v2)
+│   ├── routers/                         # API and Web Route Controllers
+│   │   ├── attendance_router.py         # Biometric punch, manual punch, reports, payroll
+│   │   ├── auth_router.py               # Login, logout, password change endpoints
+│   │   ├── holiday_router.py            # Organization & statutory holiday calendar APIs
+│   │   ├── leave_router.py              # Leave quotas, time-off requests, and approvals
+│   │   ├── regularization_router.py     # Attendance dispute & missed-punch correction APIs
+│   │   ├── shift_router.py              # Multi-shift rostering and staff assignment APIs
+│   │   ├── user_router.py               # Biometric enrollment, employee profile management
+│   │   └── web_router.py                # Jinja2 template views for Kiosk, Admin, & Portal
+│   ├── services/                        # Business Logic & Computational Engines
+│   │   ├── attendance_engine.py         # Cooldown debounce, shift punctuality, punch logging
+│   │   ├── export_service.py            # Formatted Excel (.xlsx) & PDF report generation
+│   │   ├── holiday_service.py           # Holiday schedules & calendar business logic
+│   │   ├── leave_service.py             # Balance initialization, quota deductions, date checks
+│   │   ├── payroll_service.py           # Work hours, overtime (1.5x), penalties, payroll CSV
+│   │   ├── regularization_service.py    # Dispute workflows and log updates
+│   │   ├── shift_service.py             # Punctuality evaluation, grace times, night shift rules
+│   │   ├── vision_engine.py             # Singleton wrapper for YuNet, SFace & in-memory cache
+│   │   └── vision/                      # Multi-stage Deep Learning Vision Pipeline
+│   │       ├── base.py                  # Abstract interfaces (Detector, Embedder, Liveness)
+│   │       ├── detectors.py             # YuNet ONNX & Haar Cascade fallback
+│   │       ├── embedders.py             # SFace ONNX 128-d deep embedding model
+│   │       ├── liveness.py              # Passive texture (Laplacian) & color anti-spoofing
+│   │       └── pipeline.py              # Pluggable multi-stage vision orchestrator
+│   ├── static/                          # Static Frontend Assets
+│   │   └── css/
+│   │       └── neomorphism.css          # Frosted Glassmorphism Dark UI Design System
+│   └── templates/                       # Jinja2 Server-Rendered Frosted Glass Views
+│       ├── base.html                    # Base layout, navbar, live clock, operator guide modal
+│       ├── kiosk.html                   # High-speed biometric check-in kiosk with HUD & TTS
+│       ├── login.html                   # Frosted glass sign-in card with role-based routing
+│       ├── admin_dashboard.html         # Admin HUD, 4-card Launchpad, live metrics, audit trail
+│       ├── admin_users.html             # Employee roster, multi-frame webcam enrollment, filters
+│       ├── admin_reports.html           # Attendance ledger, date presets, Excel/PDF export
+│       ├── admin_payroll.html           # Workforce wage calculations, overtime hours, CSV export
+│       ├── admin_leaves.html            # Leave approvals, quota adjustments, regularization reviews
+│       ├── admin_shifts.html            # Shift rostering, night-shift logic, employee assignments
+│       ├── admin_holidays.html          # Corporate holiday calendar & statutory schedule
+│       └── portal_dashboard.html        # Employee self-service portal (leaves, logs, pay estimate)
+├── data/                                # Database & Persistence Storage
+│   └── attendance.db                    # SQLite primary database (or configured PostgreSQL)
+├── models/                              # Pre-trained Deep Learning Neural Weights (ONNX)
+│   ├── face_detection_yunet_2023mar.onnx
+│   └── face_recognition_sface_2021dec.onnx
+├── tests/                               # Automated Test Suites
+│   ├── test_audit_fixes.py              # Fast unit test suite (shift parsing, debounce, fallback)
+│   ├── test_fras.py                     # Integration test suite for core attendance workflow
+│   ├── test_phase1_features.py          # Tests for leaves, shifts, holidays, regularization
+│   └── test_vision_pipeline.py          # Tests for multi-stage vision components
+├── Caddyfile                            # Automatic HTTPS reverse proxy config for webcam SSL
+├── Dockerfile                           # Containerized production build
+├── docker-compose.yml                   # Docker Compose orchestrator
+├── main.py                              # Server bootstrap runner (`python main.py`)
+├── manage_admin.py                      # Standalone CLI admin credential manager
+├── requirements.txt                     # Pinned project dependencies
+├── run.bat                              # 1-Click Windows execution script
+└── run.sh                               # 1-Click Linux / macOS execution script
 ```
 
 ---

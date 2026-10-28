@@ -20,26 +20,26 @@
 </head>
 <body>
 
-  <!-- Minimalist Sticky Navigation Bar -->
+  <!-- Frosted Glass Navigation Bar -->
   <header class="neo-nav">
-    <!-- Brand Identity -->
-    <a href="/kiosk" class="neo-logo">
-      <div class="neo-logo-icon">
-        <i data-feather="scan" style="width: 20px; height: 20px;"></i>
-      </div>
-      <div>
-        <span style="font-family: 'Outfit', sans-serif; font-size: 1.15rem; font-weight: 800; letter-spacing: -0.01em;">FRAS</span>
-        <span style="font-size: 0.65rem; font-weight: 700; color: var(--primary); letter-spacing: 0.08em; text-transform: uppercase; margin-left: 6px; padding: 2px 6px; background: var(--primary-subtle); border-radius: var(--radius-xs);">BIOMETRIC</span>
-      </div>
-    </a>
+    <!-- Brand Identity & Ambient Heartbeat Clock -->
+    <div style="display: flex; align-items: center; gap: 16px;">
+      <a href="/kiosk" class="neo-logo">
+        <div class="neo-logo-icon">
+          <i data-feather="scan" style="width: 20px; height: 20px;"></i>
+        </div>
+        <div style="display: flex; align-items: baseline; gap: 6px;">
+          <span style="font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 800; letter-spacing: -0.02em; color: #ffffff;">FRAS</span>
+          <span style="font-size: 0.65rem; font-weight: 800; color: #38bdf8; letter-spacing: 0.08em; text-transform: uppercase; padding: 2px 7px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: var(--radius-xs);">BIOMETRIC</span>
+        </div>
+      </a>
 
-    <!-- Center Live Clock & System Heartbeat -->
-    <div style="display: flex; align-items: center; gap: 12px;">
-      <div class="neo-card-inset" style="padding: 5px 16px; border-radius: var(--radius-full); font-size: 0.85rem; font-weight: 600; color: var(--text-muted); display: flex; align-items: center; gap: 8px;">
-        <span class="radar-pulse-dot" title="Biometric Engine Active"></span>
+      <!-- Compact Frosted Clock Pill -->
+      <div class="neo-card-inset" style="padding: 4px 14px; border-radius: var(--radius-full); font-size: 0.78rem; font-weight: 600; color: var(--text-muted); display: flex; align-items: center; gap: 8px;">
+        <span class="radar-pulse-dot" style="width: 6px; height: 6px;"></span>
         <span>{{ today_date }}</span>
         <span style="opacity: 0.3;">•</span>
-        <span id="nav-digital-clock" style="color: #60a5fa; font-family: 'Inter', monospace; font-size: 0.95rem; font-weight: 700; letter-spacing: 0.04em;">--:--:--</span>
+        <span id="nav-digital-clock" style="color: #38bdf8; font-family: monospace; font-size: 0.88rem; font-weight: 700; letter-spacing: 0.04em;">--:--:--</span>
       </div>
     </div>
 

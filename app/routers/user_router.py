@@ -142,48 +142,59 @@ def enroll_user(
         mean_vector = mean_vector / norm
     final_vector_list = mean_vector.tolist()
 
-    # 4. Save User & Biometric Record
-    if is_new_user:
-        user = User(
-            user_code=enroll_data.user_code.strip(),
-            full_name=enroll_data.full_name.strip(),
-            email=enroll_data.email.strip() if enroll_data.email else None,
-            department_id=enroll_data.department_id,
-            shift_id=enroll_data.shift_id,
-            role=enroll_data.role or "USER",
-            designation=enroll_data.designation or "Staff",
-            hourly_rate=enroll_data.hourly_rate if enroll_data.hourly_rate is not None else 25.0,
-            grace_period_mins=enroll_data.grace_period_mins,
-            is_active=True,
-        )
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-    else:
-        # Existing user - delete old embeddings and update profile
-        db.query(FaceEmbedding).filter(FaceEmbedding.user_id == user.id).delete()
-        user.full_name = enroll_data.full_name.strip()
-        if enroll_data.email:
-            user.email = enroll_data.email.strip()
-        if enroll_data.department_id is not None:
-            user.department_id = enroll_data.department_id
-        if enroll_data.shift_id is not None:
-            user.shift_id = enroll_data.shift_id
-        if enroll_data.designation:
-            user.designation = enroll_data.designation
-        if enroll_data.hourly_rate is not None:
-            user.hourly_rate = enroll_data.hourly_rate
-        if enroll_data.grace_period_mins is not None:
-            user.grace_period_mins = enroll_data.grace_period_mins
-        db.commit()
+    # 4. Save User & Biometric Record (Transactional)
+    try:
+        if is_new_user:
+            user = User(
+                user_code=enroll_data.user_code.strip(),
+                full_name=enroll_data.full_name.strip(),
+                email=enroll_data.email.strip() if enroll_data.email else None,
+                department_id=enroll_data.department_id,
+                shift_id=enroll_data.shift_id,
+                role=enroll_data.role or "USER",
+                designation=enroll_data.designation or "Staff",
+                hourly_rate=enroll_data.hourly_rate if enroll_data.hourly_rate is not None else 25.0,
+                grace_period_mins=enroll_data.grace_period_mins,
+                is_active=True,
+            )
+            db.add(user)
+            db.flush()
+        else:
+            # Existing user - delete old embeddings and update profile
+            db.query(FaceEmbedding).filter(FaceEmbedding.user_id == user.id).delete()
+            user.full_name = enroll_data.full_name.strip()
+            if enroll_data.email:
+                user.email = enroll_data.email.strip()
+            if enroll_data.department_id is not None:
+                user.department_id = enroll_data.department_id
+            if enroll_data.shift_id is not None:
+                user.shift_id = enroll_data.shift_id
+            if enroll_data.designation:
+                user.designation = enroll_data.designation
+            if enroll_data.hourly_rate is not None:
+                user.hourly_rate = enroll_data.hourly_rate
+            if enroll_data.grace_period_mins is not None:
+                user.grace_period_mins = enroll_data.grace_period_mins
 
-    face_rec = FaceEmbedding(
-        user_id=user.id,
-        quality_score=round(len(valid_embeddings) / len(enroll_data.frames), 2),
-    )
-    face_rec.set_vector(final_vector_list)
-    db.add(face_rec)
-    db.commit()
+        face_rec = FaceEmbedding(
+            user_id=user.id,
+            quality_score=round(len(valid_embeddings) / len(enroll_data.frames), 2),
+        )
+        face_rec.set_vector(final_vector_list)
+        db.add(face_rec)
+
+        # Audit log
+        audit_action = "ENROLL_USER" if is_new_user else "UPDATE_BIOMETRIC"
+        audit = AuditLog(
+            actor=admin.user_code,
+            action=audit_action,
+            details=f"{audit_action} for {user.full_name} ({user.user_code}) with {len(valid_embeddings)} frames. Grace: {user.grace_period_mins}m.",
+        )
+        db.add(audit)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to enroll user: {str(e)}")
 
     # Ensure annual leave balances are provisioned for employee
     try:
@@ -193,16 +204,6 @@ def enroll_user(
 
     # Invalidate in-memory embedding cache immediately
     EmbeddingCache.invalidate()
-
-    # Audit log
-    audit_action = "ENROLL_USER" if is_new_user else "UPDATE_BIOMETRIC"
-    audit = AuditLog(
-        actor=admin.user_code,
-        action=audit_action,
-        details=f"{audit_action} for {user.full_name} ({user.user_code}) with {len(valid_embeddings)} frames. Grace: {user.grace_period_mins}m.",
-    )
-    db.add(audit)
-    db.commit()
 
     return {
         "success": True,

@@ -375,7 +375,12 @@ def manual_punch(
             timestamp=datetime.now(),
         )
         db.add(audit)
-        db.commit()
+        try:
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            logger.error("Failed to commit manual full shift punch: %s", e)
+            raise HTTPException(status_code=500, detail="Database transaction failed while saving manual shift.")
 
         return {
             "success": True,
@@ -400,8 +405,13 @@ def manual_punch(
         timestamp=datetime.now(),
     )
     db.add(audit)
-    db.commit()
-    db.refresh(log)
+    try:
+        db.commit()
+        db.refresh(log)
+    except Exception as e:
+        db.rollback()
+        logger.error("Failed to commit manual punch: %s", e)
+        raise HTTPException(status_code=500, detail="Database transaction failed while saving manual punch.")
 
     return {
         "success": True,

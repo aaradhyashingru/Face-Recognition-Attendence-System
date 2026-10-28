@@ -76,6 +76,14 @@ class AttendanceEngine:
                 .order_by(AttendanceLog.timestamp.desc())
                 .first()
             )
+            # Cross-midnight fallback: if debounced punch happened before 00:00
+            if not latest:
+                latest = (
+                    db.query(AttendanceLog)
+                    .filter(AttendanceLog.user_id == user.id)
+                    .order_by(AttendanceLog.timestamp.desc())
+                    .first()
+                )
             return f"COOLDOWN_{remaining}s", latest
 
         # 2. Determine Punch Type (IN vs OUT)

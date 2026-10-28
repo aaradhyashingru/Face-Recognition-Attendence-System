@@ -59,16 +59,16 @@
     </div>
   </div>
 
-  <!-- Main Kiosk Scanning Grid -->
-  <div style="display: grid; grid-template-columns: 1.65fr 1.1fr; gap: 20px; align-items: stretch;">
+  <!-- Main Kiosk Scanning Grid (Anti-Distortion & Clean Glass Alignment) -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 20px; align-items: stretch; width: 100%;">
 
-    <!-- Left: Minimalist High-Tech Camera Viewfinder -->
-    <div class="neo-card" style="padding: 16px; display: flex; flex-direction: column; justify-content: space-between;">
-      <div class="neo-viewfinder" id="viewfinder-container" style="height: 480px; position: relative;">
+    <!-- Left: Frosted Glass Viewfinder -->
+    <div class="neo-card" style="padding: 16px; display: flex; flex-direction: column; justify-content: space-between; min-width: 0;">
+      <div class="neo-viewfinder" id="viewfinder-container" style="position: relative; width: 100%; aspect-ratio: 4 / 3; min-height: 380px;">
         
         <!-- Live Video & Canvas Elements -->
-        <video id="kiosk-video" autoplay playsinline muted></video>
-        <canvas id="kiosk-canvas"></canvas>
+        <video id="kiosk-video" autoplay playsinline muted style="width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); border-radius: var(--radius-md);"></video>
+        <canvas id="kiosk-canvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; transform: scaleX(-1);"></canvas>
 
         <!-- Laser Scanning Line Wave -->
         <div class="scan-laser-line" id="scan-laser"></div>
@@ -88,7 +88,7 @@
       </div>
 
       <!-- Viewfinder Environmental Guidance -->
-      <div style="display: flex; justify-content: space-around; margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--border-subtle); color: var(--text-muted); font-size: 0.8rem; font-weight: 600;">
+      <div style="display: flex; justify-content: space-around; margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--glass-border); color: var(--text-muted); font-size: 0.8rem; font-weight: 600;">
         <div style="display: flex; align-items: center; gap: 6px;">
           <i data-feather="sun" style="width: 14px; height: 14px; color: var(--warning);"></i> Good Lighting
         </div>
@@ -101,8 +101,8 @@
       </div>
     </div>
 
-    <!-- Right: Verification Result Card -->
-    <div class="neo-card" id="punch-card" style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 28px 24px; position: relative;">
+    <!-- Right: Frosted Verification Result Glass Card -->
+    <div class="neo-card" id="punch-card" style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 28px 24px; position: relative; min-width: 0;">
       
       <!-- Top Status Pill -->
       <div id="punch-status-badge" class="neo-badge neo-badge-info" style="margin-bottom: 20px;">

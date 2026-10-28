@@ -1,68 +1,79 @@
 /* ==========================================================================
-   FRAS ENTERPRISE — MINIMALIST SCANNING KIOSK & ROLE-BASED DASHBOARD CSS
-   Clean, high-performance aesthetic: Dark Slate, Glassmorphism, Laser HUD
+   FRAS ENTERPRISE — ULTRA-PREMIUM GLASSMORPHISM DESIGN SYSTEM
+   Deep Space Canvas, Multilayered Ambient Mesh, Frosted Glass & Specular Bevels
    ========================================================================== */
 
 :root {
-  /* Color Palette */
-  --bg-canvas: #090d16;
-  --bg-surface: #0f172a;
-  --bg-card: rgba(22, 30, 49, 0.75);
-  --bg-card-hover: rgba(30, 41, 69, 0.85);
-  --bg-elevated: #1e293b;
-  --bg-input: #131b2e;
+  /* Ambient Base Canvas */
+  --bg-canvas: #060913;
+  --bg-surface: #0a0f1d;
   
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-card: rgba(255, 255, 255, 0.12);
-  --border-focus: #3b82f6;
+  /* Frosted Glass Layers */
+  --glass-bg-nav: rgba(9, 14, 26, 0.72);
+  --glass-bg-card: rgba(15, 23, 42, 0.62);
+  --glass-bg-card-hover: rgba(22, 33, 58, 0.75);
+  --glass-bg-inset: rgba(10, 16, 32, 0.55);
+  --glass-bg-elevated: rgba(30, 41, 69, 0.65);
+  --glass-bg-modal: rgba(13, 19, 36, 0.88);
+  --glass-bg-btn: rgba(255, 255, 255, 0.05);
+  --glass-bg-btn-hover: rgba(255, 255, 255, 0.12);
 
-  /* Typography Colors */
+  /* Specular Glass Borders & Inner Highlights */
+  --glass-border: rgba(255, 255, 255, 0.10);
+  --glass-border-hover: rgba(255, 255, 255, 0.22);
+  --glass-border-subtle: rgba(255, 255, 255, 0.06);
+  --glass-specular: inset 0 1px 1px 0 rgba(255, 255, 255, 0.16);
+  --glass-specular-soft: inset 0 1px 0 0 rgba(255, 255, 255, 0.10);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.42);
+  --glass-shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.65);
+
+  /* Typography */
   --text-main: #f8fafc;
   --text-muted: #94a3b8;
   --text-sub: #64748b;
   --text-inverse: #0f172a;
 
-  /* Accents */
-  --primary: #3b82f6;
-  --primary-hover: #2563eb;
-  --primary-glow: rgba(59, 130, 246, 0.35);
-  --primary-subtle: rgba(59, 130, 246, 0.12);
+  /* Neon Ambient Accents */
+  --primary: #38bdf8;
+  --primary-rgb: 56, 189, 248;
+  --primary-hover: #0284c7;
+  --primary-glow: rgba(56, 189, 248, 0.35);
+  --primary-subtle: rgba(56, 189, 248, 0.14);
 
-  --accent: #6366f1;
-  --accent-glow: rgba(99, 102, 241, 0.35);
-  
+  --accent: #818cf8;
+  --accent-glow: rgba(129, 140, 248, 0.35);
+
   --success: #10b981;
   --success-glow: rgba(16, 185, 129, 0.35);
-  --success-subtle: rgba(16, 185, 129, 0.12);
+  --success-subtle: rgba(16, 185, 129, 0.14);
 
-  --warning: #f59e0b;
-  --warning-glow: rgba(245, 158, 11, 0.35);
-  --warning-subtle: rgba(245, 158, 11, 0.12);
+  --warning: #fbbf24;
+  --warning-glow: rgba(251, 191, 36, 0.35);
+  --warning-subtle: rgba(251, 191, 36, 0.14);
 
   --danger: #f43f5e;
   --danger-glow: rgba(244, 63, 94, 0.35);
-  --danger-subtle: rgba(244, 63, 94, 0.12);
+  --danger-subtle: rgba(244, 63, 94, 0.14);
 
-  --info: #06b6d4;
-  --info-subtle: rgba(6, 182, 212, 0.12);
+  --info: #38bdf8;
+  --info-subtle: rgba(56, 189, 248, 0.14);
 
-  /* Radius & Shadows */
+  /* Border Radii */
   --radius-xs: 6px;
   --radius-sm: 10px;
   --radius-md: 16px;
   --radius-lg: 20px;
-  --radius-xl: 28px;
+  --radius-xl: 26px;
   --radius-full: 9999px;
 
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
-  --shadow-card: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-  --shadow-glow: 0 0 25px var(--primary-glow);
-
-  --transition-fast: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-smooth: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Smooth Transitions */
+  --transition-fast: all 0.16s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-smooth: all 0.26s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Base Reset */
+/* ==========================================================================
+   BASE RESET & MULTILAYER AMBIENT CANVAS
+   ========================================================================== */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -73,8 +84,12 @@
 body {
   background-color: var(--bg-canvas);
   background-image: 
-    radial-gradient(circle at 0% 0%, rgba(59, 130, 246, 0.08) 0px, transparent 50%),
-    radial-gradient(circle at 100% 100%, rgba(99, 102, 241, 0.06) 0px, transparent 50%);
+    radial-gradient(circle at 10% 12%, rgba(56, 189, 248, 0.14) 0%, transparent 42%),
+    radial-gradient(circle at 90% 18%, rgba(129, 140, 248, 0.13) 0%, transparent 40%),
+    radial-gradient(circle at 50% 65%, rgba(16, 185, 129, 0.08) 0%, transparent 48%),
+    radial-gradient(circle at 80% 90%, rgba(59, 130, 246, 0.11) 0%, transparent 42%);
+  background-attachment: fixed;
+  background-size: cover;
   color: var(--text-main);
   min-height: 100vh;
   display: flex;
@@ -84,20 +99,23 @@ body {
 }
 
 /* ==========================================================================
-   NAVIGATION BAR
+   STICKY FROSTED GLASS NAVIGATION BAR
    ========================================================================== */
 .neo-nav {
-  background: rgba(15, 23, 42, 0.85);
-  -webkit-backdrop-filter: blur(16px);
-  backdrop-filter: blur(16px);
-  border-bottom: 1px solid var(--border-subtle);
-  padding: 14px 28px;
+  background: var(--glass-bg-nav);
+  -webkit-backdrop-filter: blur(24px) saturate(190%);
+  backdrop-filter: blur(24px) saturate(190%);
+  border-bottom: 1px solid var(--glass-border);
+  box-shadow: 
+    0 4px 30px rgba(0, 0, 0, 0.35),
+    var(--glass-specular-soft);
+  padding: 12px 28px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   position: sticky;
   top: 0;
-  z-index: 50;
+  z-index: 100;
   transition: var(--transition-smooth);
 }
 
@@ -105,552 +123,172 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  font-size: 1.15rem;
-  font-weight: 800;
-  color: var(--text-main);
   text-decoration: none;
-  letter-spacing: -0.02em;
+  color: var(--text-main);
 }
 
 .neo-logo-icon {
   width: 38px;
   height: 38px;
   border-radius: var(--radius-sm);
-  background: linear-gradient(135deg, var(--primary), var(--accent));
-  box-shadow: 0 4px 14px var(--primary-glow);
+  background: linear-gradient(135deg, #38bdf8, #6366f1);
+  box-shadow: 0 4px 16px var(--primary-glow);
   display: flex;
   align-items: center;
   justify-content: center;
   color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
 }
 
-/* Nav Links & Controls */
 .nav-link-group {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: nowrap;
 }
 
 /* ==========================================================================
-   BUTTONS (Minimalist & High-Tech)
+   GLASS BUTTONS
    ========================================================================== */
 .neo-btn {
-  background: var(--bg-elevated);
-  color: var(--text-main);
-  border: 1px solid var(--border-subtle);
+  background: var(--glass-bg-btn);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  color: #f1f5f9;
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-sm);
-  padding: 9px 18px;
-  font-size: 0.9rem;
+  padding: 8px 16px;
+  font-size: 0.86rem;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.25),
+    var(--glass-specular-soft);
   transition: var(--transition-fast);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   text-decoration: none;
+  white-space: nowrap;
   -webkit-user-select: none;
-  -moz-user-select: none;
   user-select: none;
 }
 
 .neo-btn:hover {
-  background: rgba(45, 59, 87, 0.9);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: var(--glass-bg-btn-hover);
+  border-color: var(--glass-border-hover);
   color: #ffffff;
   transform: translateY(-1px);
+  box-shadow: 
+    0 4px 16px rgba(0, 0, 0, 0.35),
+    var(--glass-specular);
 }
 
 .neo-btn:active, .neo-btn.active {
   background: var(--primary-subtle);
-  border-color: var(--primary);
-  color: var(--primary);
+  border-color: rgba(56, 189, 248, 0.45);
+  color: #38bdf8;
+  box-shadow: 0 0 15px var(--primary-glow);
 }
 
 .neo-btn-primary {
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.85), rgba(37, 99, 235, 0.9));
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(147, 197, 253, 0.45);
+  box-shadow: 
+    0 4px 18px var(--primary-glow),
+    var(--glass-specular);
   color: #ffffff !important;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 4px 14px var(--primary-glow);
 }
 
 .neo-btn-primary:hover {
-  background: linear-gradient(135deg, #2563eb, #1d4ed8);
-  box-shadow: 0 6px 18px var(--primary-glow);
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.95), rgba(29, 78, 216, 0.95));
+  box-shadow: 0 6px 24px rgba(56, 189, 248, 0.55);
   transform: translateY(-1px);
 }
 
 .neo-btn-success {
-  background: linear-gradient(135deg, #10b981, #059669);
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.85), rgba(5, 150, 105, 0.9));
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(110, 231, 183, 0.45);
+  box-shadow: 0 4px 18px var(--success-glow), var(--glass-specular);
   color: #ffffff !important;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 4px 14px var(--success-glow);
 }
 
 .neo-btn-success:hover {
-  background: linear-gradient(135deg, #059669, #047857);
-  box-shadow: 0 6px 18px var(--success-glow);
+  background: linear-gradient(135deg, rgba(5, 150, 105, 0.95), rgba(4, 120, 87, 0.95));
+  box-shadow: 0 6px 22px rgba(16, 185, 129, 0.55);
   transform: translateY(-1px);
 }
 
 .neo-btn-danger {
-  background: linear-gradient(135deg, #f43f5e, #e11d48);
+  background: linear-gradient(135deg, rgba(244, 63, 94, 0.85), rgba(225, 29, 72, 0.9));
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(253, 164, 175, 0.4);
+  box-shadow: 0 4px 18px var(--danger-glow), var(--glass-specular);
   color: #ffffff !important;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 4px 14px var(--danger-glow);
 }
 
 .neo-btn-danger:hover {
-  background: linear-gradient(135deg, #e11d48, #be123c);
-  box-shadow: 0 6px 18px var(--danger-glow);
+  background: linear-gradient(135deg, rgba(225, 29, 72, 0.95), rgba(190, 18, 60, 0.95));
+  box-shadow: 0 6px 22px rgba(244, 63, 94, 0.55);
   transform: translateY(-1px);
 }
 
 .neo-btn-outline {
   background: transparent;
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--glass-border);
   color: var(--text-muted);
 }
 
 .neo-btn-outline:hover {
-  border-color: var(--primary);
-  color: var(--primary);
+  border-color: rgba(56, 189, 248, 0.4);
+  color: #38bdf8;
   background: var(--primary-subtle);
 }
 
 /* ==========================================================================
-   CARDS & CONTAINERS
+   GLASS CARDS & CONTAINERS
    ========================================================================== */
 .neo-card {
-  background: var(--bg-card);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--border-card);
+  background: var(--glass-bg-card);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-card);
+  box-shadow: 
+    var(--glass-shadow),
+    var(--glass-specular);
   padding: 24px;
   transition: var(--transition-smooth);
+  position: relative;
+  min-width: 0; /* Prevents flexbox/grid blowouts */
 }
 
 .neo-card:hover {
-  border-color: rgba(255, 255, 255, 0.18);
+  border-color: var(--glass-border-hover);
+  background: var(--glass-bg-card-hover);
+  box-shadow: 
+    0 12px 36px 0 rgba(0, 0, 0, 0.52),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.22);
 }
 
 .neo-card-inset {
-  background: var(--bg-input);
-  border: 1px solid var(--border-subtle);
+  background: var(--glass-bg-inset);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--glass-border-subtle);
   border-radius: var(--radius-sm);
-  padding: 16px 20px;
-}
-
-/* ==========================================================================
-   BADGES & PILLS
-   ========================================================================== */
-.neo-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 12px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  border-radius: var(--radius-full);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  border: 1px solid transparent;
-}
-
-.neo-badge-success {
-  color: #34d399;
-  background: var(--success-subtle);
-  border-color: rgba(52, 211, 153, 0.25);
-}
-
-.neo-badge-warning {
-  color: #fbbf24;
-  background: var(--warning-subtle);
-  border-color: rgba(251, 191, 36, 0.25);
-}
-
-.neo-badge-danger {
-  color: #fb7185;
-  background: var(--danger-subtle);
-  border-color: rgba(251, 113, 133, 0.25);
-}
-
-.neo-badge-info {
-  color: #38bdf8;
-  background: var(--info-subtle);
-  border-color: rgba(56, 189, 248, 0.25);
-}
-
-.role-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  font-size: 0.7rem;
-  font-weight: 800;
-  border-radius: var(--radius-full);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.role-super {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(168, 85, 247, 0.15));
-  border: 1px solid rgba(239, 68, 68, 0.35);
-  color: #fca5a5;
-}
-
-.role-admin {
-  background: var(--primary-subtle);
-  border: 1px solid rgba(59, 130, 246, 0.35);
-  color: #93c5fd;
-}
-
-.role-hr {
-  background: rgba(16, 185, 129, 0.15);
-  border: 1px solid rgba(16, 185, 129, 0.35);
-  color: #6ee7b7;
-}
-
-.role-user {
-  background: rgba(148, 163, 184, 0.12);
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  color: #cbd5e1;
-}
-
-/* ==========================================================================
-   INPUTS & FORMS
-   ========================================================================== */
-.neo-input, .neo-select {
-  width: 100%;
-  background: var(--bg-input);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  padding: 10px 16px;
-  font-size: 0.9rem;
-  color: var(--text-main);
-  outline: none;
-  transition: var(--transition-fast);
-}
-
-.neo-input:focus, .neo-select:focus {
-  border-color: var(--border-focus);
-  box-shadow: 0 0 0 3px var(--primary-subtle);
-  background: rgba(22, 32, 54, 0.9);
-}
-
-.neo-select option {
-  background: var(--bg-surface);
-  color: var(--text-main);
-}
-
-/* ==========================================================================
-   LIVE-SCANNING KIOSK VIEWFINDER & HUD
-   ========================================================================== */
-.kiosk-container {
-  max-width: 1400px;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.neo-viewfinder {
-  position: relative;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-card);
-  overflow: hidden;
-  background: #050811;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
-}
-
-.neo-viewfinder video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transform: scaleX(-1);
-}
-
-.neo-viewfinder canvas {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  transform: scaleX(-1);
-}
-
-/* Precision Corner Reticles */
-.reticle-corner {
-  position: absolute;
-  width: 32px;
-  height: 32px;
-  pointer-events: none;
-  transition: border-color 0.3s ease;
-  z-index: 10;
-}
-
-.reticle-top-left { 
-  top: 24px; left: 24px; 
-  border-top: 3px solid var(--primary); 
-  border-left: 3px solid var(--primary); 
-  border-radius: 6px 0 0 0; 
-}
-.reticle-top-right { 
-  top: 24px; right: 24px; 
-  border-top: 3px solid var(--primary); 
-  border-right: 3px solid var(--primary); 
-  border-radius: 0 6px 0 0; 
-}
-.reticle-bottom-left { 
-  bottom: 24px; left: 24px; 
-  border-bottom: 3px solid var(--primary); 
-  border-left: 3px solid var(--primary); 
-  border-radius: 0 0 0 6px; 
-}
-.reticle-bottom-right { 
-  bottom: 24px; right: 24px; 
-  border-bottom: 3px solid var(--primary); 
-  border-right: 3px solid var(--primary); 
-  border-radius: 0 0 6px 0; 
-}
-
-/* High-Tech Animated Laser Scan Line */
-.scan-laser-line {
-  position: absolute;
-  left: 10%;
-  right: 10%;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, var(--primary), var(--info), transparent);
-  box-shadow: 0 0 15px var(--primary), 0 0 25px var(--info);
-  opacity: 0.85;
-  pointer-events: none;
-  z-index: 8;
-  animation: scanLaser 3s ease-in-out infinite alternate;
-}
-
-@keyframes scanLaser {
-  0% { top: 15%; opacity: 0.3; }
-  50% { opacity: 0.95; }
-  100% { top: 85%; opacity: 0.3; }
-}
-
-/* Floating Scanning Status Pill */
-.scan-status-hud {
-  position: absolute;
-  top: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(15, 23, 42, 0.85);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--border-card);
-  padding: 6px 18px;
-  border-radius: var(--radius-full);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  color: #ffffff;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-  z-index: 15;
-}
-
-/* Pulsing radar point */
-.radar-pulse-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--success);
-  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
-  animation: radarPulse 1.8s infinite;
-}
-
-@keyframes radarPulse {
-  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-  70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-}
-
-/* ==========================================================================
-   TABLES
-   ========================================================================== */
-.neo-table-wrapper {
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-subtle);
-  overflow: hidden;
-  background: rgba(15, 23, 42, 0.6);
-}
-
-.neo-table {
-  width: 100%;
-  border-collapse: collapse;
-  text-align: left;
-}
-
-.neo-table th {
-  background: rgba(30, 41, 59, 0.5);
-  padding: 12px 18px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  border-bottom: 1px solid var(--border-subtle);
-}
-
-.neo-table td {
   padding: 14px 18px;
-  font-size: 0.9rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-  color: var(--text-main);
-}
-
-.neo-table tr:hover td {
-  background: rgba(255, 255, 255, 0.03);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.35);
 }
 
 /* ==========================================================================
-   METRIC STAT CARDS
-   ========================================================================== */
-.stat-card-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
-}
-
-.stat-card {
-  background: var(--bg-card);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--border-card);
-  border-radius: var(--radius-md);
-  padding: 20px 22px;
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  transition: var(--transition-smooth);
-}
-
-.stat-card:hover {
-  transform: translateY(-2px);
-  border-color: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
-}
-
-.stat-icon-box {
-  width: 52px;
-  height: 52px;
-  border-radius: var(--radius-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.stat-value {
-  font-size: 1.75rem;
-  font-weight: 800;
-  color: var(--text-main);
-  line-height: 1.1;
-  margin-top: 4px;
-}
-
-.stat-label {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-/* ==========================================================================
-   MODALS & TOASTS
-   ========================================================================== */
-.neo-modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.75);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-  padding: 20px;
-}
-
-.neo-modal {
-  background: #0f172a;
-  border: 1px solid var(--border-card);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.85);
-  width: 100%;
-  max-width: 620px;
-  padding: 28px;
-  max-height: 90vh;
-  overflow-y: auto;
-}
-
-.neo-toast {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  background: rgba(15, 23, 42, 0.95);
-  -webkit-backdrop-filter: blur(16px);
-  backdrop-filter: blur(16px);
-  border: 1px solid var(--border-card);
-  padding: 14px 20px;
-  border-radius: var(--radius-md);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  z-index: 200;
-  animation: toastSlide 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes toastSlide {
-  from { transform: translateY(30px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
-/* Animations */
-@keyframes spin { 
-  100% { transform: rotate(360deg); } 
-}
-
-@keyframes pulseGlow {
-  0%, 100% { opacity: 0.8; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.05); }
-}
-
-/* Scrollbars */
-::-webkit-scrollbar {
-  width: 7px;
-  height: 7px;
-}
-::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.2);
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: var(--radius-full);
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
-}
-
-/* ==========================================================================
-   DROPDOWN MENUS (Clean & Glassmorphic)
+   GLASS DROPDOWN MENUS
    ========================================================================== */
 .neo-dropdown {
   position: relative;
@@ -661,19 +299,21 @@ body {
   position: absolute;
   top: calc(100% + 8px);
   left: 0;
-  min-width: 220px;
-  background: rgba(15, 23, 42, 0.96);
-  -webkit-backdrop-filter: blur(20px);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--border-card);
+  min-width: 230px;
+  background: var(--glass-bg-modal);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  backdrop-filter: blur(28px) saturate(190%);
+  border: 1px solid var(--glass-border-hover);
   border-radius: var(--radius-md);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+  box-shadow: 
+    var(--glass-shadow-lg),
+    var(--glass-specular);
   padding: 8px;
   display: none;
   flex-direction: column;
   gap: 4px;
   z-index: 100;
-  animation: dropdownFade 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: dropdownFade 0.16s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .neo-dropdown-menu.right {
@@ -687,7 +327,7 @@ body {
 }
 
 @keyframes dropdownFade {
-  from { opacity: 0; transform: translateY(-6px); }
+  from { opacity: 0; transform: translateY(-5px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
@@ -711,30 +351,210 @@ body {
 
 .neo-dropdown-item.active {
   background: var(--primary-subtle);
-  color: #60a5fa;
+  color: #38bdf8;
   font-weight: 700;
 }
 
 .neo-dropdown-divider {
   height: 1px;
-  background: var(--border-subtle);
+  background: var(--glass-border-subtle);
   margin: 4px 6px;
 }
 
 /* ==========================================================================
-   OPERATOR LAUNCHPAD & QUICK ACTIONS
+   GLASS BADGES & STATUS PILLS
+   ========================================================================== */
+.neo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 11px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border-radius: var(--radius-full);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.neo-badge-success {
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(52, 211, 153, 0.3);
+}
+
+.neo-badge-warning {
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.neo-badge-danger {
+  color: #fb7185;
+  background: rgba(244, 63, 94, 0.15);
+  border: 1px solid rgba(251, 113, 133, 0.3);
+}
+
+.neo-badge-info {
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.role-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  border-radius: var(--radius-full);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.role-super {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.18), rgba(168, 85, 247, 0.18));
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+}
+
+.role-admin {
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: #93c5fd;
+}
+
+.role-hr {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #6ee7b7;
+}
+
+.role-user {
+  background: rgba(148, 163, 184, 0.12);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  color: #cbd5e1;
+}
+
+/* Frosted Punch & Status Badges */
+.punch-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  border-radius: var(--radius-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+.punch-in {
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+}
+
+.punch-out {
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border-radius: var(--radius-full);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+.status-ontime {
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(52, 211, 153, 0.3);
+}
+
+.status-late {
+  color: #fb7185;
+  background: rgba(244, 63, 94, 0.15);
+  border: 1px solid rgba(251, 113, 133, 0.3);
+}
+
+.status-halfday {
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.status-excused {
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.status-overtime {
+  color: #a855f7;
+  background: rgba(168, 85, 247, 0.15);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+/* ==========================================================================
+   GLASS INPUTS & FORMS
+   ========================================================================== */
+.neo-input, .neo-select {
+  width: 100%;
+  background: var(--glass-bg-inset);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 15px;
+  font-size: 0.88rem;
+  color: var(--text-main);
+  outline: none;
+  transition: var(--transition-fast);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.neo-input:focus, .neo-select:focus {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.22);
+  background: rgba(15, 23, 42, 0.85);
+}
+
+.neo-select option {
+  background: #0f172a;
+  color: #ffffff;
+}
+
+/* ==========================================================================
+   OPERATOR LAUNCHPAD
    ========================================================================== */
 .operator-launchpad {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 16px;
+  width: 100%;
 }
 
 .operator-card {
-  background: linear-gradient(135deg, rgba(30, 41, 69, 0.65), rgba(15, 23, 42, 0.85));
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
-  border: 1px solid var(--border-card);
+  background: var(--glass-bg-card);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-md);
   padding: 20px 22px;
   display: flex;
@@ -743,8 +563,10 @@ body {
   text-decoration: none;
   cursor: pointer;
   transition: var(--transition-smooth);
+  box-shadow: var(--glass-shadow), var(--glass-specular);
   position: relative;
   overflow: hidden;
+  min-width: 0;
 }
 
 .operator-card::before {
@@ -761,9 +583,9 @@ body {
 
 .operator-card:hover {
   transform: translateY(-3px);
-  border-color: rgba(255, 255, 255, 0.25);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
-  background: linear-gradient(135deg, rgba(37, 52, 88, 0.75), rgba(20, 29, 52, 0.9));
+  background: var(--glass-bg-card-hover);
+  border-color: var(--glass-border-hover);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.55), inset 0 1px 1px 0 rgba(255, 255, 255, 0.22);
 }
 
 .operator-card:hover::before {
@@ -771,14 +593,15 @@ body {
 }
 
 .operator-card-icon {
-  width: 50px;
-  height: 50px;
+  width: 48px;
+  height: 48px;
   border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   font-size: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
   transition: var(--transition-fast);
 }
 
@@ -805,13 +628,13 @@ body {
 }
 
 /* ==========================================================================
-   OPERATOR SYSTEM STATUS STRIP
+   STATUS STRIP & PRESET PILLS
    ========================================================================== */
 .status-strip {
-  background: rgba(15, 23, 42, 0.7);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--border-subtle);
+  background: var(--glass-bg-card);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-md);
   padding: 12px 20px;
   display: flex;
@@ -819,42 +642,38 @@ body {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 14px;
+  box-shadow: var(--glass-shadow), var(--glass-specular);
 }
 
 .status-strip-item {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   font-size: 0.82rem;
 }
 
 .status-indicator {
-  width: 9px;
-  height: 9px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: var(--success);
-  box-shadow: 0 0 8px var(--success-glow);
+  box-shadow: 0 0 10px var(--success-glow);
 }
 
-.status-indicator.amber {
-  background: var(--warning);
-  box-shadow: 0 0 8px var(--warning-glow);
-}
-
-/* ==========================================================================
-   DATE PRESETS & FILTER PILLS
-   ========================================================================== */
 .preset-pills-group {
   display: flex;
   gap: 6px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .preset-pill {
   background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border-subtle);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-xs);
-  padding: 5px 11px;
+  padding: 5px 12px;
   font-size: 0.74rem;
   font-weight: 700;
   color: var(--text-muted);
@@ -864,15 +683,305 @@ body {
 
 .preset-pill:hover, .preset-pill.active {
   background: var(--primary-subtle);
-  border-color: var(--primary);
-  color: #93c5fd;
+  border-color: rgba(56, 189, 248, 0.45);
+  color: #38bdf8;
+  box-shadow: 0 0 12px var(--primary-glow);
 }
 
 /* ==========================================================================
-   OPERATOR CHEATSHEET & HELP MODAL STYLES
+   GLASS TABLES
    ========================================================================== */
+.neo-table-wrapper {
+  border-radius: var(--radius-md);
+  border: 1px solid var(--glass-border);
+  overflow-x: auto;
+  background: var(--glass-bg-inset);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+  width: 100%;
+}
+
+.neo-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.neo-table th {
+  background: rgba(22, 32, 58, 0.55);
+  padding: 12px 18px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid var(--glass-border);
+  white-space: nowrap;
+}
+
+.neo-table td {
+  padding: 14px 18px;
+  font-size: 0.88rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  color: var(--text-main);
+  white-space: nowrap;
+}
+
+.neo-table tr:hover td {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* ==========================================================================
+   METRIC STAT CARDS
+   ========================================================================== */
+.stat-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  width: 100%;
+}
+
+.stat-card {
+  background: var(--glass-bg-card);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  padding: 20px 22px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  transition: var(--transition-smooth);
+  box-shadow: var(--glass-shadow), var(--glass-specular);
+  min-width: 0;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--glass-border-hover);
+  background: var(--glass-bg-card-hover);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55), inset 0 1px 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.stat-icon-box {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.stat-value {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--text-main);
+  line-height: 1.1;
+  margin-top: 4px;
+}
+
+.stat-label {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ==========================================================================
+   LIVE KIOSK VIEWFINDER & HUD
+   ========================================================================== */
+.kiosk-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.neo-viewfinder {
+  position: relative;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--glass-border);
+  overflow: hidden;
+  background: #03060d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 
+    0 16px 48px rgba(0, 0, 0, 0.75),
+    var(--glass-specular);
+  aspect-ratio: 4 / 3;
+  width: 100%;
+}
+
+.neo-viewfinder video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+}
+
+.neo-viewfinder canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  transform: scaleX(-1);
+}
+
+.reticle-corner {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  pointer-events: none;
+  transition: border-color 0.3s ease;
+  z-index: 10;
+}
+
+.reticle-top-left { 
+  top: 20px; left: 20px; 
+  border-top: 3px solid #38bdf8; 
+  border-left: 3px solid #38bdf8; 
+  border-radius: 6px 0 0 0; 
+}
+.reticle-top-right { 
+  top: 20px; right: 20px; 
+  border-top: 3px solid #38bdf8; 
+  border-right: 3px solid #38bdf8; 
+  border-radius: 0 6px 0 0; 
+}
+.reticle-bottom-left { 
+  bottom: 20px; left: 20px; 
+  border-bottom: 3px solid #38bdf8; 
+  border-left: 3px solid #38bdf8; 
+  border-radius: 0 0 0 6px; 
+}
+.reticle-bottom-right { 
+  bottom: 20px; right: 20px; 
+  border-bottom: 3px solid #38bdf8; 
+  border-right: 3px solid #38bdf8; 
+  border-radius: 0 0 6px 0; 
+}
+
+.scan-laser-line {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #38bdf8, #818cf8, transparent);
+  box-shadow: 0 0 15px #38bdf8, 0 0 25px #818cf8;
+  opacity: 0.85;
+  pointer-events: none;
+  z-index: 8;
+  animation: scanLaser 3s ease-in-out infinite alternate;
+}
+
+@keyframes scanLaser {
+  0% { top: 15%; opacity: 0.3; }
+  50% { opacity: 0.95; }
+  100% { top: 85%; opacity: 0.3; }
+}
+
+.scan-status-hud {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(9, 14, 26, 0.85);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border-hover);
+  padding: 6px 18px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #ffffff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), var(--glass-specular-soft);
+  z-index: 15;
+}
+
+.radar-pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  animation: radarPulse 1.8s infinite;
+}
+
+@keyframes radarPulse {
+  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+/* ==========================================================================
+   GLASS MODALS & TOASTS
+   ========================================================================== */
+.neo-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 6, 14, 0.75);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 20px;
+}
+
+.neo-modal {
+  background: var(--glass-bg-modal);
+  -webkit-backdrop-filter: blur(30px) saturate(200%);
+  backdrop-filter: blur(30px) saturate(200%);
+  border: 1px solid var(--glass-border-hover);
+  border-radius: var(--radius-lg);
+  box-shadow: 
+    var(--glass-shadow-lg),
+    var(--glass-specular);
+  width: 100%;
+  max-width: 620px;
+  padding: 28px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.neo-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: rgba(9, 14, 26, 0.90);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border-hover);
+  padding: 14px 20px;
+  border-radius: var(--radius-md);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.65), var(--glass-specular);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 300;
+  animation: toastSlide 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes toastSlide {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
 .help-guide-modal {
-  max-width: 800px !important;
+  max-width: 820px !important;
 }
 
 .guide-step-grid {
@@ -883,8 +992,8 @@ body {
 }
 
 .guide-step-card {
-  background: var(--bg-input);
-  border: 1px solid var(--border-subtle);
+  background: var(--glass-bg-inset);
+  border: 1px solid var(--glass-border-subtle);
   border-radius: var(--radius-sm);
   padding: 16px;
   position: relative;
@@ -894,11 +1003,11 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
-  background: var(--primary);
-  color: #ffffff;
+  background: #38bdf8;
+  color: #03060d;
   font-size: 0.78rem;
   font-weight: 800;
   margin-bottom: 10px;
@@ -929,19 +1038,37 @@ body {
   color: #ffffff;
 }
 
+/* Animations */
+@keyframes spin { 
+  100% { transform: rotate(360deg); } 
+}
+
+/* Glass Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.15);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: var(--radius-full);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
 /* ==========================================================================
-   RESPONSIVENESS & MEDIA QUERIES
+   RESPONSIVENESS & MEDIA QUERIES (Anti-Distortion)
    ========================================================================== */
-@media (max-width: 1024px) {
+@media (max-width: 1200px) {
   .neo-nav {
-    padding: 12px 18px;
-  }
-  .stat-card-grid {
-    grid-template-columns: repeat(2, 1fr);
+    padding: 12px 20px;
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   .neo-nav {
     flex-wrap: wrap;
     gap: 12px;
@@ -949,16 +1076,17 @@ body {
   .nav-link-group {
     flex-wrap: wrap;
     width: 100%;
-    justify-content: flex-start;
   }
   .stat-card-grid {
-    grid-template-columns: 1fr;
-  }
-  .kiosk-container {
-    padding: 0 10px;
+    grid-template-columns: repeat(2, 1fr);
   }
   .operator-launchpad {
     grid-template-columns: 1fr;
   }
 }
 
+@media (max-width: 600px) {
+  .stat-card-grid {
+    grid-template-columns: 1fr;
+  }
+}
