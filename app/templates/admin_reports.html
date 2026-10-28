@@ -32,8 +32,21 @@
     </div>
   </div>
 
-  <!-- Filter Bar -->
+  <!-- Filter Bar with Fast Date Presets -->
   <div class="neo-card" style="padding: 16px 20px;">
+    <!-- Quick Date Presets -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+      <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">
+        Quick Date Filters:
+      </div>
+      <div class="preset-pills-group">
+        <button type="button" class="preset-pill active" id="pill-report-today" onclick="setReportDatePreset('today')">Today</button>
+        <button type="button" class="preset-pill" id="pill-report-yesterday" onclick="setReportDatePreset('yesterday')">Yesterday</button>
+        <button type="button" class="preset-pill" id="pill-report-week" onclick="setReportDatePreset('week')">This Week</button>
+        <button type="button" class="preset-pill" id="pill-report-month" onclick="setReportDatePreset('month')">This Month</button>
+      </div>
+    </div>
+
     <div style="display: grid; grid-template-columns: repeat(4, 1fr) auto; gap: 14px; align-items: flex-end;">
       
       <div>
@@ -117,6 +130,44 @@
 
 {% block extra_scripts %}
 <script>
+  function formatIsoDate(d) {
+    const pad = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  }
+
+  function setReportDatePreset(preset) {
+    const now = new Date();
+    const startInput = document.getElementById('filter-start');
+    const endInput = document.getElementById('filter-end');
+
+    ['today', 'yesterday', 'week', 'month'].forEach(p => {
+      const pill = document.getElementById(`pill-report-${p}`);
+      if (pill) pill.classList.toggle('active', p === preset);
+    });
+
+    if (preset === 'today') {
+      startInput.value = formatIsoDate(now);
+      endInput.value = formatIsoDate(now);
+    } else if (preset === 'yesterday') {
+      const yest = new Date(now);
+      yest.setDate(yest.getDate() - 1);
+      startInput.value = formatIsoDate(yest);
+      endInput.value = formatIsoDate(yest);
+    } else if (preset === 'week') {
+      const weekStart = new Date(now);
+      const day = weekStart.getDay() || 7;
+      weekStart.setDate(weekStart.getDate() - day + 1); // Monday
+      startInput.value = formatIsoDate(weekStart);
+      endInput.value = formatIsoDate(now);
+    } else if (preset === 'month') {
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      startInput.value = formatIsoDate(monthStart);
+      endInput.value = formatIsoDate(now);
+    }
+
+    fetchFilteredLogs();
+  }
+
   async function fetchFilteredLogs() {
     const start = document.getElementById('filter-start').value;
     const end = document.getElementById('filter-end').value;

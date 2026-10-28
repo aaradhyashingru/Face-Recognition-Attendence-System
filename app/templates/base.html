@@ -45,7 +45,9 @@
 
     <!-- Right: Role Badges & Navigation Links -->
     <nav class="nav-link-group">
-      <a href="/kiosk" class="neo-btn {% if request.url.path == '/kiosk' %}active{% endif %}">
+      <!-- Direct Kiosk Launch Button -->
+      <a href="/kiosk" class="neo-btn {% if request.url.path == '/kiosk' %}active neo-btn-primary{% else %}neo-btn-outline{% endif %}" style="display: inline-flex; align-items: center; gap: 7px; font-weight: 700;">
+        <span class="radar-pulse-dot" style="width: 7px; height: 7px; background: #38bdf8;"></span>
         <i data-feather="video" style="width: 15px; height: 15px;"></i> Kiosk Mode
       </a>
       
@@ -56,21 +58,57 @@
         <a href="/admin/reports" class="neo-btn {% if request.url.path == '/admin/reports' %}active{% endif %}">
           <i data-feather="activity" style="width: 15px; height: 15px;"></i> Tracking
         </a>
-        <a href="/admin/payroll" class="neo-btn {% if request.url.path == '/admin/payroll' %}active{% endif %}">
-          <i data-feather="dollar-sign" style="width: 15px; height: 15px;"></i> Payroll
-        </a>
-        <a href="/admin/leaves" class="neo-btn {% if request.url.path == '/admin/leaves' %}active{% endif %}">
-          <i data-feather="calendar" style="width: 15px; height: 15px;"></i> Leaves
-        </a>
-        <a href="/admin/holidays" class="neo-btn {% if request.url.path == '/admin/holidays' %}active{% endif %}">
-          <i data-feather="sun" style="width: 15px; height: 15px;"></i> Holidays
-        </a>
-        <a href="/admin/shifts" class="neo-btn {% if request.url.path == '/admin/shifts' %}active{% endif %}">
-          <i data-feather="clock" style="width: 15px; height: 15px;"></i> Shifts
-        </a>
-        <a href="/admin/users" class="neo-btn {% if request.url.path == '/admin/users' %}active{% endif %}">
-          <i data-feather="users" style="width: 15px; height: 15px;"></i> Users
-        </a>
+
+        <!-- Consolidated Workforce & HR Dropdown -->
+        <div class="neo-dropdown" id="hr-dropdown">
+          <button type="button" class="neo-btn {% if request.url.path in ['/admin/users', '/admin/leaves', '/admin/shifts', '/admin/holidays', '/admin/payroll'] %}active{% endif %}" style="display: inline-flex; align-items: center; gap: 6px;">
+            <i data-feather="briefcase" style="width: 15px; height: 15px;"></i> Workforce & HR
+            <i data-feather="chevron-down" style="width: 13px; height: 13px; opacity: 0.7;"></i>
+          </button>
+          <div class="neo-dropdown-menu">
+            <a href="/admin/users" class="neo-dropdown-item {% if request.url.path == '/admin/users' %}active{% endif %}">
+              <i data-feather="users" style="width: 15px; height: 15px; color: #60a5fa;"></i>
+              <div>
+                <div>Users & Biometrics</div>
+                <div style="font-size: 0.7rem; color: var(--text-sub); font-weight: 500;">Face enrollment & profiles</div>
+              </div>
+            </a>
+            <a href="/admin/leaves" class="neo-dropdown-item {% if request.url.path == '/admin/leaves' %}active{% endif %}">
+              <i data-feather="calendar" style="width: 15px; height: 15px; color: #fbbf24;"></i>
+              <div>
+                <div>Leave & Approvals</div>
+                <div style="font-size: 0.7rem; color: var(--text-sub); font-weight: 500;">Regularizations & leaves</div>
+              </div>
+            </a>
+            <a href="/admin/shifts" class="neo-dropdown-item {% if request.url.path == '/admin/shifts' %}active{% endif %}">
+              <i data-feather="clock" style="width: 15px; height: 15px; color: #a78bfa;"></i>
+              <div>
+                <div>Shifts & Rostering</div>
+                <div style="font-size: 0.7rem; color: var(--text-sub); font-weight: 500;">Work hours & grace times</div>
+              </div>
+            </a>
+            <a href="/admin/holidays" class="neo-dropdown-item {% if request.url.path == '/admin/holidays' %}active{% endif %}">
+              <i data-feather="sun" style="width: 15px; height: 15px; color: #34d399;"></i>
+              <div>
+                <div>Holiday Calendar</div>
+                <div style="font-size: 0.7rem; color: var(--text-sub); font-weight: 500;">Company holidays</div>
+              </div>
+            </a>
+            <div class="neo-dropdown-divider"></div>
+            <a href="/admin/payroll" class="neo-dropdown-item {% if request.url.path == '/admin/payroll' %}active{% endif %}">
+              <i data-feather="dollar-sign" style="width: 15px; height: 15px; color: #38bdf8;"></i>
+              <div>
+                <div>Payroll Manager</div>
+                <div style="font-size: 0.7rem; color: var(--text-sub); font-weight: 500;">Hours & salary calculations</div>
+              </div>
+            </a>
+          </div>
+        </div>
+
+        <!-- Operator Quick Guide Button -->
+        <button type="button" onclick="openOperatorGuideModal()" class="neo-btn" style="color: #60a5fa; border-color: rgba(59, 130, 246, 0.3); background: rgba(59, 130, 246, 0.1);" title="Click or press '?' for Operator Help">
+          <i data-feather="help-circle" style="width: 15px; height: 15px;"></i> Operator Guide
+        </button>
 
         <!-- User Role Profile Badge -->
         <div style="display: flex; align-items: center; gap: 8px; margin-left: 6px; padding-left: 10px; border-left: 1px solid var(--border-subtle);">
@@ -86,6 +124,11 @@
           <i data-feather="user" style="width: 15px; height: 15px;"></i> My Portal
         </a>
 
+        <!-- Operator Quick Guide Button for Employee -->
+        <button type="button" onclick="openOperatorGuideModal()" class="neo-btn" style="color: #60a5fa; border-color: rgba(59, 130, 246, 0.3); background: rgba(59, 130, 246, 0.1);" title="Help & Info">
+          <i data-feather="help-circle" style="width: 15px; height: 15px;"></i> Help
+        </button>
+
         <!-- Employee Profile Badge -->
         <div style="display: flex; align-items: center; gap: 8px; margin-left: 6px; padding-left: 10px; border-left: 1px solid var(--border-subtle);">
           <span class="neo-badge neo-badge-info" style="display: flex; align-items: center; gap: 5px; padding: 4px 10px;">
@@ -96,6 +139,9 @@
           </button>
         </div>
       {% else %}
+        <button type="button" onclick="openOperatorGuideModal()" class="neo-btn" style="color: #60a5fa; border-color: rgba(59, 130, 246, 0.3); background: rgba(59, 130, 246, 0.1);" title="Help & Info">
+          <i data-feather="help-circle" style="width: 15px; height: 15px;"></i> Help Guide
+        </button>
         <a href="/login" class="neo-btn neo-btn-primary">
           <i data-feather="lock" style="width: 15px; height: 15px;"></i> Portal Sign In
         </a>
@@ -111,6 +157,212 @@
   <!-- Global Toast Notifications -->
   <div id="toast-container"></div>
 
+  <!-- Interactive Operator Reference & Help Modal (Global) -->
+  <div id="operator-guide-modal" class="neo-modal-backdrop" style="display: none;">
+    <div class="neo-modal help-guide-modal">
+      
+      <!-- Modal Header -->
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 14px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 44px; height: 44px; border-radius: var(--radius-sm); background: linear-gradient(135deg, var(--primary), var(--accent)); color: #ffffff; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 14px var(--primary-glow);">
+            <i data-feather="book-open" style="width: 22px; height: 22px;"></i>
+          </div>
+          <div>
+            <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.35rem; font-weight: 800; color: #ffffff; letter-spacing: -0.01em;">
+              Operator & HR Reference Guide
+            </h3>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
+              Essential daily workflows, biometric camera rules, and troubleshooting cheatsheet
+            </p>
+          </div>
+        </div>
+        <button onclick="closeOperatorGuideModal()" class="neo-btn" style="padding: 6px; border-radius: 50%;">
+          <i data-feather="x" style="width: 16px; height: 16px;"></i>
+        </button>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div style="display: flex; gap: 8px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 10px; margin-bottom: 16px; flex-wrap: wrap;">
+        <button type="button" class="neo-btn active" id="tab-btn-daily" onclick="switchGuideTab('daily')" style="padding: 6px 14px; font-size: 0.82rem;">
+          <i data-feather="sun" style="width: 13px; height: 13px;"></i> Daily Routine
+        </button>
+        <button type="button" class="neo-btn" id="tab-btn-kiosk" onclick="switchGuideTab('kiosk')" style="padding: 6px 14px; font-size: 0.82rem;">
+          <i data-feather="camera" style="width: 13px; height: 13px;"></i> Kiosk Rules & HUD
+        </button>
+        <button type="button" class="neo-btn" id="tab-btn-enroll" onclick="switchGuideTab('enroll')" style="padding: 6px 14px; font-size: 0.82rem;">
+          <i data-feather="user-plus" style="width: 13px; height: 13px;"></i> Face Enrollment
+        </button>
+        <button type="button" class="neo-btn" id="tab-btn-manual" onclick="switchGuideTab('manual')" style="padding: 6px 14px; font-size: 0.82rem;">
+          <i data-feather="edit-3" style="width: 13px; height: 13px;"></i> Manual Punch
+        </button>
+        <button type="button" class="neo-btn" id="tab-btn-shortcuts" onclick="switchGuideTab('shortcuts')" style="padding: 6px 14px; font-size: 0.82rem;">
+          <i data-feather="command" style="width: 13px; height: 13px;"></i> Hotkeys & Tips
+        </button>
+      </div>
+
+      <!-- Tab 1: Daily Routine -->
+      <div id="guide-tab-daily" class="guide-tab-panel">
+        <div style="font-size: 0.85rem; color: #cbd5e1; line-height: 1.5; margin-bottom: 12px;">
+          Follow this simple 4-step workflow each working day to keep attendance effortless and error-free:
+        </div>
+        <div class="guide-step-grid">
+          <div class="guide-step-card">
+            <span class="guide-step-badge">1</span>
+            <div class="guide-step-title">Open Kiosk Mode</div>
+            <div class="guide-step-text">Click <b>Kiosk Mode</b> in the navbar or launchpad. Press <span class="shortcut-pill">F</span> to enter full-screen on your entrance terminal or tablet.</div>
+          </div>
+          <div class="guide-step-card">
+            <span class="guide-step-badge">2</span>
+            <div class="guide-step-title">Staff Face Scan</div>
+            <div class="guide-step-text">Staff stand 1-2 feet from camera. System automatically recognizes face within 400ms and announces welcome chime.</div>
+          </div>
+          <div class="guide-step-card">
+            <span class="guide-step-badge">3</span>
+            <div class="guide-step-title">Monitor Dashboard</div>
+            <div class="guide-step-text">Check <b>Dashboard</b> for live headcount, late arrivals outside grace period, and today's active attendance rate.</div>
+          </div>
+          <div class="guide-step-card">
+            <span class="guide-step-badge">4</span>
+            <div class="guide-step-title">Handle Exceptions</div>
+            <div class="guide-step-text">Use <b>Manual Punch</b> for employees on outdoor duty or camera glitches. Review pending leave requests under <b>Workforce</b>.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 2: Kiosk Rules & HUD -->
+      <div id="guide-tab-kiosk" class="guide-tab-panel" style="display: none;">
+        <div style="font-size: 0.85rem; color: #cbd5e1; line-height: 1.5; margin-bottom: 12px;">
+          The camera viewfinder uses color-coded laser HUD indicators so you always know what the system is doing:
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="neo-card-inset" style="border-left: 3px solid #10b981;">
+            <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; color: #34d399; font-size: 0.88rem;">
+              <i data-feather="check-circle" style="width: 16px; height: 16px;"></i> GREEN RETICLE (Success)
+            </div>
+            <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;">
+              Face verified against enrolled vectors. Check-In or Check-Out recorded with timestamp and confidence score. Chime rings.
+            </div>
+          </div>
+          <div class="neo-card-inset" style="border-left: 3px solid #f59e0b;">
+            <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; color: #fbbf24; font-size: 0.88rem;">
+              <i data-feather="clock" style="width: 16px; height: 16px;"></i> AMBER RETICLE (Cooldown)
+            </div>
+            <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;">
+              Employee already punched within the cooldown window (prevents duplicate accidental punches when standing near camera).
+            </div>
+          </div>
+          <div class="neo-card-inset" style="border-left: 3px solid #f43f5e;">
+            <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; color: #fb7185; font-size: 0.88rem;">
+              <i data-feather="alert-triangle" style="width: 16px; height: 16px;"></i> RED RETICLE (Unrecognized)
+            </div>
+            <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;">
+              Person not registered in the system yet. Ask them to see an admin for 1-minute face enrollment.
+            </div>
+          </div>
+          <div class="neo-card-inset" style="border-left: 3px solid #e11d48;">
+            <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; color: #fda4af; font-size: 0.88rem;">
+              <i data-feather="shield-alert" style="width: 16px; height: 16px;"></i> FLASHING RED (Anti-Spoof Alert)
+            </div>
+            <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;">
+              MiniFASNet detected a printed photo or phone screen reflection. System rejected the spoof attempt.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 3: Face Enrollment -->
+      <div id="guide-tab-enroll" class="guide-tab-panel" style="display: none;">
+        <div style="font-size: 0.85rem; color: #cbd5e1; line-height: 1.5; margin-bottom: 12px;">
+          Enrolling a new employee takes under 30 seconds using deep metric SFace embeddings:
+        </div>
+        <div class="guide-step-grid">
+          <div class="guide-step-card">
+            <span class="guide-step-badge">1</span>
+            <div class="guide-step-title">Enter Details</div>
+            <div class="guide-step-text">Navigate to <b>Workforce & HR > Users</b>. Click <b>Enroll New User</b>. Fill in employee code, full name, department, and role.</div>
+          </div>
+          <div class="guide-step-card">
+            <span class="guide-step-badge">2</span>
+            <div class="guide-step-title">Set Grace Period</div>
+            <div class="guide-step-text">Optionally configure a <b>Manual Grace Time</b> (e.g. 20 minutes) if this employee has an authorized arrival buffer.</div>
+          </div>
+          <div class="guide-step-card">
+            <span class="guide-step-badge">3</span>
+            <div class="guide-step-title">Capture 5 Frames</div>
+            <div class="guide-step-text">Position the employee looking directly at camera. Click <b>Capture & Enroll</b>. The system automatically records 5 burst frames.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 4: Manual Punch -->
+      <div id="guide-tab-manual" class="guide-tab-panel" style="display: none;">
+        <div style="font-size: 0.85rem; color: #cbd5e1; line-height: 1.5; margin-bottom: 12px;">
+          Forgot to scan? Camera rebooted? Handle attendance corrections cleanly without touching the database:
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <div class="neo-card-inset">
+            <div style="font-weight: 700; color: #60a5fa; font-size: 0.85rem;">CHECK-IN ONLY:</div>
+            <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">Records a single IN punch at any custom date & time with optional status (ON TIME, LATE, or EXCUSED).</div>
+          </div>
+          <div class="neo-card-inset">
+            <div style="font-weight: 700; color: #fbbf24; font-size: 0.85rem;">CHECK-OUT ONLY:</div>
+            <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">Records a single OUT punch at the employee's departure time.</div>
+          </div>
+          <div class="neo-card-inset">
+            <div style="font-weight: 700; color: #34d399; font-size: 0.85rem;">FULL SHIFT (Both IN & OUT):</div>
+            <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">Creates both Check-In and Check-Out in 1 click (defaults to 8 hours apart). Perfect for full regularized days.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 5: Hotkeys & Shortcuts -->
+      <div id="guide-tab-shortcuts" class="guide-tab-panel" style="display: none;">
+        <div style="font-size: 0.85rem; color: #cbd5e1; line-height: 1.5; margin-bottom: 12px;">
+          Fast operator shortcuts to operate the terminal without touching the mouse:
+        </div>
+        <table class="neo-table" style="font-size: 0.82rem;">
+          <thead>
+            <tr>
+              <th style="width: 140px;">Keyboard Key</th>
+              <th>Action / Function</th>
+              <th>Where it Works</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="shortcut-pill">?</span> or <span class="shortcut-pill">H</span></td>
+              <td>Open / Close this Operator Reference Guide</td>
+              <td>Every page</td>
+            </tr>
+            <tr>
+              <td><span class="shortcut-pill">F</span></td>
+              <td>Toggle Fullscreen Mode</td>
+              <td>Kiosk Mode</td>
+            </tr>
+            <tr>
+              <td><span class="shortcut-pill">Esc</span></td>
+              <td>Close open modal or popup dialog</td>
+              <td>Every page</td>
+            </tr>
+            <tr>
+              <td><span class="shortcut-pill">V</span></td>
+              <td>Toggle Voice audio speech feedback</td>
+              <td>Kiosk Mode</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Modal Footer -->
+      <div style="display: flex; justify-content: flex-end; margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--border-subtle);">
+        <button type="button" onclick="closeOperatorGuideModal()" class="neo-btn neo-btn-primary" style="padding: 8px 20px;">
+          <i data-feather="check" style="width: 15px; height: 15px;"></i> Got It, Thanks!
+        </button>
+      </div>
+
+    </div>
+  </div>
+
   <script>
     // Initialize Feather Icons
     feather.replace();
@@ -125,6 +377,49 @@
     }
     setInterval(updateClock, 1000);
     updateClock();
+
+    // Operator Guide Modal Handlers
+    function openOperatorGuideModal() {
+      document.getElementById('operator-guide-modal').style.display = 'flex';
+      feather.replace();
+    }
+
+    function closeOperatorGuideModal() {
+      document.getElementById('operator-guide-modal').style.display = 'none';
+    }
+
+    function switchGuideTab(tabName) {
+      const tabs = ['daily', 'kiosk', 'enroll', 'manual', 'shortcuts'];
+      tabs.forEach(t => {
+        const btn = document.getElementById(`tab-btn-${t}`);
+        const panel = document.getElementById(`guide-tab-${t}`);
+        if (btn) btn.classList.toggle('active', t === tabName);
+        if (panel) panel.style.display = t === tabName ? 'block' : 'none';
+      });
+      feather.replace();
+    }
+
+    // Global Keyboard Shortcut Listener
+    window.addEventListener('keydown', (e) => {
+      // If typing in input, don't trigger hotkeys
+      if (['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+        if (e.key === 'Escape') {
+          closeOperatorGuideModal();
+        }
+        return;
+      }
+
+      if (e.key === '?' || (e.key === 'h' && !e.ctrlKey && !e.metaKey)) {
+        const modal = document.getElementById('operator-guide-modal');
+        if (modal.style.display === 'flex') {
+          closeOperatorGuideModal();
+        } else {
+          openOperatorGuideModal();
+        }
+      } else if (e.key === 'Escape') {
+        closeOperatorGuideModal();
+      }
+    });
 
     // Minimalist Toast Notification System
     function showToast(message, type = 'info') {
